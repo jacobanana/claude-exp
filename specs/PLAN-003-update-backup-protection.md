@@ -184,30 +184,30 @@ Implementing backup protection for the `specli update` command that prompts user
   - **Expected Result**: Code improved, all tests still pass
   - **Validation**: Run full test suite - all tests still pass
 
-### Phase 3: CLI Integration (TDD Cycles) ⬜ NOT STARTED
-**Status**: ⬜ NOT STARTED
+### Phase 3: CLI Integration (TDD Cycles) ✅ COMPLETE
+**Status**: ✅ COMPLETE
 **Dependencies**: Phase 2 ✅ COMPLETE
 
-#### TDD Cycle 3A: Update Command Integration ⬜ NOT STARTED
-**Status**: ⬜ NOT STARTED
+#### TDD Cycle 3A: Update Command Integration ✅ COMPLETE
+**Status**: ✅ COMPLETE
 
-- [ ] **TEST-3A1**: Write failing integration tests for update command
-  - **Status**: ⬜ NOT STARTED
+- [x] **TEST-3A1**: Write failing integration tests for update command
+  - **Status**: ✅ COMPLETE
   - **Prerequisites**: Phase 2 ✅ COMPLETE
   - **Covers**: End-to-end backup functionality in update command
   - **Definition**: Write CLI tests in `tests/test_cli.py` that validate `specli update` and `specli update --no-backup` commands
   - **Expected Result**: Integration tests MUST fail initially
   - **Validation**: Run integration tests - must fail with missing --no-backup option
 
-- [ ] **IMPL-3A1**: Integrate backup logic into update command
-  - **Status**: ⬜ NOT STARTED
+- [x] **IMPL-3A1**: Integrate backup logic into update command
+  - **Status**: ✅ COMPLETE
   - **Prerequisites**: TEST-3A1 ✅ COMPLETE (and failing)
   - **Definition**: Modify `update()` function in `main.py` to add `--no-backup` flag and call backup logic before merge operations
   - **Expected Result**: All tests pass (unit + integration)
-  - **Validation**: Run complete test suite - all pass
+  - **Validation**: Run complete test suite - all pass (120 passed, 1 skipped)
 
-- [ ] **REFACTOR-3A1**: Refactor CLI integration if needed
-  - **Status**: ⬜ NOT STARTED
+- [x] **REFACTOR-3A1**: Refactor CLI integration if needed
+  - **Status**: ✅ COMPLETE
   - **Prerequisites**: IMPL-3A1 ✅ COMPLETE (all tests passing)
   - **Definition**: Clean up update command flow, ensure backup happens at the right point
   - **Expected Result**: Code improved, all tests still pass
@@ -260,9 +260,9 @@ Implementing backup protection for the `specli update` command that prompts user
 
 ## Progress Summary
 **Total Tasks**: 21
-**Completed**: 16 ✅
+**Completed**: 19 ✅
 **In Progress**: 0 🔄
-**Remaining**: 5 ⬜
+**Remaining**: 2 ⬜
 **Blocked**: 0 ❌
 
 ## Risk Assessment

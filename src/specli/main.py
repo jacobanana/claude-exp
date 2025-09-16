@@ -9,6 +9,7 @@ from pathlib import Path
 
 import click
 
+from .backup import BackupManager
 from .config import load_config, save_config
 from .filesystem import (
     ClaudeFolderCorruptedError,
@@ -166,7 +167,10 @@ def deploy(source_repo, path, dry_run):
     "--source",
     help="Source repository to pull updates from (will prompt if not specified)",
 )
-def update(path, dry_run, source):
+@click.option(
+    "--no-backup", is_flag=True, help="Skip backup prompt and do not create backup"
+)
+def update(path, dry_run, source, no_backup):
     """Update existing .claude commands in target path."""
     try:
         # Output expected by tests
@@ -192,9 +196,6 @@ def update(path, dry_run, source):
             if config["config_exists"] and config["repository_url"]:
                 source = config["repository_url"]
                 click.echo(f"Using saved repository from configuration: {source}")
-                if dry_run:
-                    # For dry-run, we can return early after showing the config source
-                    return
             else:
                 if config.get("error"):
                     click.echo(
@@ -204,17 +205,56 @@ def update(path, dry_run, source):
                     click.echo("No configuration file found.")
                 source = click.prompt("Enter source repository")
 
-        # Validate GitHub setup
-        click.echo("Checking GitHub CLI setup...")
-        setup_info = ensure_github_setup()
-        click.echo(
-            f"GitHub CLI v{setup_info['cli_version']} authenticated as {setup_info['user_info'].get('login', 'unknown')}"
-        )
+        # For dry-run, skip GitHub operations but still do backup logic
+        if not dry_run:
+            # Validate GitHub setup
+            click.echo("Checking GitHub CLI setup...")
+            setup_info = ensure_github_setup()
+            click.echo(
+                f"GitHub CLI v{setup_info['cli_version']} authenticated as {setup_info['user_info'].get('login', 'unknown')}"
+            )
 
-        # Validate source repository
-        click.echo(f"Validating source repository: {source}")
-        source_info = validate_repository_access(source)
-        click.echo(f"Source repository validated: {source_info['full_name']}")
+            # Validate source repository
+            click.echo(f"Validating source repository: {source}")
+            source_info = validate_repository_access(source)
+            click.echo(f"Source repository validated: {source_info['full_name']}")
+
+        # Update target path
+        click.echo(f"\nUpdating target path: {target_path}")
+
+        # Handle backup before update (if .claude folder exists)
+        backup_needed = False
+        try:
+            target_claude = detect_claude_folder(target_path)
+            click.echo("Found existing .claude folder in target")
+            backup_needed = True
+
+            # Create backup manager and handle backup
+            backup_manager = BackupManager(target_path)
+            should_backup = backup_manager.should_create_backup(no_backup=no_backup)
+
+            if should_backup and not dry_run:
+                click.echo("Creating backup...")
+                backup_result = backup_manager.create_claude_backup()
+
+                if backup_result["success"]:
+                    click.echo(f"Backup created: {backup_result['backup_path'].name}")
+                else:
+                    click.echo(f"ERROR: Backup failed: {backup_result['error']}")
+                    click.echo("Update operation cancelled to protect your data.")
+                    return
+            elif should_backup and dry_run:
+                click.echo("   [DRY RUN] Would create backup before update")
+            elif not no_backup:
+                click.echo("Skipping backup as requested.")
+
+        except ClaudeFolderNotFoundError:
+            # No .claude folder exists, no backup needed
+            pass
+
+        if dry_run:
+            click.echo(f"   [DRY RUN] Would update .claude folder in {target_path}")
+            return
 
         # Clone source repository to temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -235,18 +275,11 @@ def update(path, dry_run, source):
                 click.echo(f"ERROR: Corrupted .claude folder in source: {e}")
                 return
 
-            # Update target path
-            click.echo(f"\nUpdating target path: {target_path}")
-
-            if dry_run:
-                click.echo(f"   [DRY RUN] Would update .claude folder in {target_path}")
-                return
-
             try:
                 # Check if target has .claude folder
                 try:
                     target_claude = detect_claude_folder(target_path)
-                    click.echo("Found existing .claude folder in target")
+                    # Already announced in backup section
 
                     # Merge/update .claude folders
                     merge_result = merge_claude_folders(source_claude, target_claude)

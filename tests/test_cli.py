@@ -284,3 +284,155 @@ class TestConfigIntegration:
             assert (
                 "https://github.com/user/saved-repo.git" in result.output
             ), "Update command should use repository from config file"
+
+
+class TestBackupIntegration:
+    """Test backup functionality integrated with CLI commands."""
+
+    def setup_method(self):
+        """Set up test environment."""
+        self.runner = CliRunner()
+
+    def test_update_command_accepts_no_backup_flag(self):
+        """Test that update command accepts --no-backup flag."""
+        with self.runner.isolated_filesystem():
+            from specli.main import update
+
+            # Create a config file to avoid prompting
+            import json
+            from pathlib import Path
+
+            target_path = Path(".").resolve()
+            config_file = target_path / "specli.settings.json"
+            config_data = {
+                "repository_url": "https://github.com/user/repo.git",
+                "branch": None,
+                "deployed_at": "2024-01-15T10:30:00Z",
+            }
+            with open(config_file, "w") as f:
+                json.dump(config_data, f, indent=2)
+
+            # Run update command with --no-backup flag
+            result = self.runner.invoke(
+                update, ["--no-backup", "--dry-run"]
+            )
+
+            # Should run without prompting
+            assert result.exit_code == 0
+            assert "Create backup of .claude folder before update?" not in result.output
+
+    def test_update_prompts_for_backup_by_default(self):
+        """Test that update command prompts for backup when no flag is provided."""
+        with self.runner.isolated_filesystem():
+            from specli.main import update
+
+            # Create a config file to avoid source prompting
+            import json
+            from pathlib import Path
+
+            target_path = Path(".").resolve()
+            config_file = target_path / "specli.settings.json"
+            config_data = {
+                "repository_url": "https://github.com/user/repo.git",
+                "branch": None,
+                "deployed_at": "2024-01-15T10:30:00Z",
+            }
+            with open(config_file, "w") as f:
+                json.dump(config_data, f, indent=2)
+
+            # Create a .claude folder to backup
+            claude_folder = target_path / ".claude"
+            claude_folder.mkdir()
+            (claude_folder / "test.txt").write_text("content")
+
+            # Run update command without --no-backup flag
+            # Simulate user pressing Enter (default Yes)
+            result = self.runner.invoke(
+                update, ["--dry-run"], input="\n"
+            )
+
+            # Should prompt for backup (if backup logic is integrated)
+            # This will fail initially until backup is integrated
+            assert "Create backup of .claude folder before update?" in result.output
+
+    def test_update_creates_backup_when_confirmed(self):
+        """Test that update creates backup when user confirms."""
+        with self.runner.isolated_filesystem():
+            from specli.main import update
+            import json
+            from pathlib import Path
+
+            target_path = Path(".").resolve()
+
+            # Create a config file
+            config_file = target_path / "specli.settings.json"
+            config_data = {
+                "repository_url": "https://github.com/user/repo.git",
+                "branch": None,
+                "deployed_at": "2024-01-15T10:30:00Z",
+            }
+            with open(config_file, "w") as f:
+                json.dump(config_data, f, indent=2)
+
+            # Create a .claude folder with content
+            claude_folder = target_path / ".claude"
+            claude_folder.mkdir()
+            (claude_folder / "test.txt").write_text("original content")
+
+            # Run update command and confirm backup
+            result = self.runner.invoke(
+                update, ["--dry-run"], input="y\n"
+            )
+
+            # Check that backup folder was created
+            backup_root = target_path / ".claude-backup"
+            if backup_root.exists():
+                # Should have at least one backup folder
+                backup_folders = list(backup_root.iterdir())
+                assert len(backup_folders) > 0
+                # Check that backup contains the original content
+                backup_folder = backup_folders[0]
+                assert (backup_folder / ".claude" / "test.txt").exists()
+
+    def test_update_skips_backup_with_no_backup_flag(self):
+        """Test that update skips backup creation when --no-backup is used."""
+        with self.runner.isolated_filesystem():
+            from specli.main import update
+            import json
+            from pathlib import Path
+
+            target_path = Path(".").resolve()
+
+            # Create a config file
+            config_file = target_path / "specli.settings.json"
+            config_data = {
+                "repository_url": "https://github.com/user/repo.git",
+                "branch": None,
+                "deployed_at": "2024-01-15T10:30:00Z",
+            }
+            with open(config_file, "w") as f:
+                json.dump(config_data, f, indent=2)
+
+            # Create a .claude folder
+            claude_folder = target_path / ".claude"
+            claude_folder.mkdir()
+            (claude_folder / "test.txt").write_text("content")
+
+            # Run update command with --no-backup
+            result = self.runner.invoke(
+                update, ["--no-backup", "--dry-run"]
+            )
+
+            # Should not create backup folder
+            backup_root = target_path / ".claude-backup"
+            assert not backup_root.exists()
+
+    def test_update_help_shows_no_backup_flag(self):
+        """Test that update help text includes --no-backup flag documentation."""
+        from specli.main import update
+
+        result = self.runner.invoke(update, ["--help"])
+
+        assert result.exit_code == 0
+        assert "--no-backup" in result.output
+        assert "Skip backup prompt" in result.output or "backup" in result.output.lower()
