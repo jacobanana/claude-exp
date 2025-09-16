@@ -1,6 +1,6 @@
 [project]
 name = "specli"
-version = "0.2.0"
+version = "0.2.1"
 description = "Claude Command Deployer - Deploy and sync .claude commands across repositories"
 readme = "README.md"
 authors = [
