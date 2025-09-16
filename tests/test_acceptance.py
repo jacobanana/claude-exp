@@ -299,42 +299,47 @@ class TestInteractiveScenarios:
 
     def test_interactive_deploy_prompts_for_targets(self):
         """Test that deploy command works with default path (current directory)."""
-        result = self.runner.invoke(
-            main,
-            ['deploy', 'https://github.com/user/source', '--dry-run']
-        )
+        with self.runner.isolated_filesystem():
+            result = self.runner.invoke(
+                main,
+                ['deploy', 'https://github.com/user/source', '--dry-run']
+            )
 
-        # Deploy should default to current directory
-        assert "Target path:" in result.output
+            # Deploy should default to current directory
+            assert "Target path:" in result.output
 
     def test_interactive_update_prompts_for_targets(self):
         """Test that update command prompts for source repository when none specified."""
-        result = self.runner.invoke(
-            main,
-            ['update'],
-            input='https://github.com/user/source\n'
-        )
+        with self.runner.isolated_filesystem():
+            # Create a temp directory to work in (no config file present)
+            result = self.runner.invoke(
+                main,
+                ['update'],
+                input='https://github.com/user/source\n'
+            )
 
-        assert "Enter source repository:" in result.output
-        assert "Update command called" in result.output
+            assert "Enter source repository:" in result.output
+            assert "Update command called" in result.output
 
     def test_dry_run_mode_deployment(self):
         """Test that dry run mode shows intended actions without executing."""
-        result = self.runner.invoke(
-            main,
-            ['deploy', 'https://github.com/user/source', '--path', 'target1', '--dry-run']
-        )
+        with self.runner.isolated_filesystem():
+            result = self.runner.invoke(
+                main,
+                ['deploy', 'https://github.com/user/source', '--path', 'target1', '--dry-run']
+            )
 
-        assert "Dry run mode - no changes would be made" in result.output
+            assert "Dry run mode - no changes would be made" in result.output
 
     def test_dry_run_mode_update(self):
         """Test that dry run mode works for update command."""
-        result = self.runner.invoke(
-            main,
-            ['update', '--path', 'target1', '--source', 'https://github.com/user/source', '--dry-run']
-        )
+        with self.runner.isolated_filesystem():
+            result = self.runner.invoke(
+                main,
+                ['update', '--path', 'target1', '--source', 'https://github.com/user/source', '--dry-run']
+            )
 
-        assert "Dry run mode - no changes would be made" in result.output
+            assert "Dry run mode - no changes would be made" in result.output
 
 
 class TestEndToEndIntegration:
@@ -347,29 +352,30 @@ class TestEndToEndIntegration:
     @patch('subprocess.run')
     def test_complete_deployment_workflow(self, mock_run):
         """Test complete deployment workflow from start to finish."""
-        # Mock all GitHub operations
-        def gh_side_effect(args, **kwargs):
-            return Mock(returncode=0, stdout="Success")
+        with self.runner.isolated_filesystem():
+            # Mock all GitHub operations
+            def gh_side_effect(args, **kwargs):
+                return Mock(returncode=0, stdout="Success")
 
-        mock_run.side_effect = gh_side_effect
+            mock_run.side_effect = gh_side_effect
 
-        # Test deploy workflow
-        result = self.runner.invoke(
-            main,
-            ['deploy', 'https://github.com/user/claude-commands', '--path', 'user/target-repo', '--dry-run']
-        )
+            # Test deploy workflow
+            result = self.runner.invoke(
+                main,
+                ['deploy', 'https://github.com/user/claude-commands', '--path', 'user/target-repo', '--dry-run']
+            )
 
-        # Should show dry run output
-        assert "Dry run mode - no changes would be made" in result.output
+            # Should show dry run output
+            assert "Dry run mode - no changes would be made" in result.output
 
-        # Test update workflow
-        result = self.runner.invoke(
-            main,
-            ['update', '--path', 'user/target-repo', '--source', 'https://github.com/user/claude-commands', '--dry-run']
-        )
+            # Test update workflow
+            result = self.runner.invoke(
+                main,
+                ['update', '--path', 'user/target-repo', '--source', 'https://github.com/user/claude-commands', '--dry-run']
+            )
 
-        # Should show dry run output
-        assert "Dry run mode - no changes would be made" in result.output
+            # Should show dry run output
+            assert "Dry run mode - no changes would be made" in result.output
 
     def test_help_system_completeness(self):
         """Test that help system provides complete information."""

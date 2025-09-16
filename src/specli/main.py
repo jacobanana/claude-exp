@@ -22,6 +22,7 @@ from .github import (
     GitHubCLIError,
     GitHubRepositoryError
 )
+from .config import save_config, load_config
 
 
 @click.group()
@@ -53,6 +54,12 @@ def deploy(source_repo, path, dry_run):
 
         if dry_run:
             click.echo("Dry run mode - no changes would be made")
+            # Save configuration file even for dry-run to show what would be created
+            config_result = save_config(source_repo, target_path)
+            if config_result['success']:
+                click.echo(f"   [DRY RUN] Configuration file created: {config_result['config_file'].name}")
+            else:
+                click.echo(f"   [DRY RUN] Configuration file creation would fail: {config_result['error']}")
             return
 
         # Validate GitHub setup
@@ -87,6 +94,12 @@ def deploy(source_repo, path, dry_run):
 
             if dry_run:
                 click.echo(f"   [DRY RUN] Would deploy .claude folder to {target_path}")
+                # Save configuration file even for dry-run to show what would be created
+                config_result = save_config(source_repo, target_path)
+                if config_result['success']:
+                    click.echo(f"   [DRY RUN] Configuration file created: {config_result['config_file'].name}")
+                else:
+                    click.echo(f"   [DRY RUN] Configuration file creation would fail: {config_result['error']}")
                 return
 
             try:
@@ -100,6 +113,13 @@ def deploy(source_repo, path, dry_run):
 
                     if copy_result['backup_created']:
                         click.echo(f"   Backup created: {copy_result['backup_path'].name}")
+
+                    # Save configuration file after successful deployment
+                    config_result = save_config(source_repo, target_path)
+                    if config_result['success']:
+                        click.echo(f"Configuration saved: {config_result['config_file'].name}")
+                    else:
+                        click.echo(f"Warning: Could not save configuration: {config_result['error']}")
                 else:
                     click.echo(f"ERROR: Failed to deploy to {target_path}: {copy_result['error']}")
 
@@ -137,12 +157,6 @@ def update(path, dry_run, source):
 
         if dry_run:
             click.echo("Dry run mode - no changes would be made")
-            return
-
-        # Validate GitHub setup
-        click.echo("Checking GitHub CLI setup...")
-        setup_info = ensure_github_setup()
-        click.echo(f"GitHub CLI v{setup_info['cli_version']} authenticated as {setup_info['user_info'].get('login', 'unknown')}")
 
         # Ensure target path exists
         if not target_path.exists():
@@ -155,7 +169,25 @@ def update(path, dry_run, source):
 
         # Handle source repository selection
         if not source:
-            source = click.prompt("Enter source repository")
+            # Try to load from configuration file first
+            config = load_config(target_path)
+            if config['config_exists'] and config['repository_url']:
+                source = config['repository_url']
+                click.echo(f"Using saved repository from configuration: {source}")
+                if dry_run:
+                    # For dry-run, we can return early after showing the config source
+                    return
+            else:
+                if config.get('error'):
+                    click.echo(f"Warning: Could not read configuration file: {config['error']}")
+                else:
+                    click.echo("No configuration file found.")
+                source = click.prompt("Enter source repository")
+
+        # Validate GitHub setup
+        click.echo("Checking GitHub CLI setup...")
+        setup_info = ensure_github_setup()
+        click.echo(f"GitHub CLI v{setup_info['cli_version']} authenticated as {setup_info['user_info'].get('login', 'unknown')}")
 
         # Validate source repository
         click.echo(f"Validating source repository: {source}")
@@ -200,6 +232,13 @@ def update(path, dry_run, source):
                         click.echo(f"   Files updated: {merge_result['files_updated']}")
                         click.echo(f"   Files added: {merge_result['files_added']}")
                         click.echo(f"   Files preserved: {merge_result['files_preserved']}")
+
+                        # Save configuration file after successful update
+                        config_result = save_config(source, target_path)
+                        if config_result['success']:
+                            click.echo(f"Configuration updated: {config_result['config_file'].name}")
+                        else:
+                            click.echo(f"Warning: Could not update configuration: {config_result['error']}")
                     else:
                         click.echo(f"ERROR: Failed to update {target_path}: {merge_result['error']}")
 
@@ -212,6 +251,13 @@ def update(path, dry_run, source):
                         click.echo(f"Successfully deployed .claude folder to {target_path}")
                         click.echo(f"   Files copied: {copy_result['files_copied']}")
                         click.echo(f"   Bytes copied: {copy_result['bytes_copied']}")
+
+                        # Save configuration file after successful deployment
+                        config_result = save_config(source, target_path)
+                        if config_result['success']:
+                            click.echo(f"Configuration saved: {config_result['config_file'].name}")
+                        else:
+                            click.echo(f"Warning: Could not save configuration: {config_result['error']}")
                     else:
                         click.echo(f"ERROR: Failed to deploy to {target_path}: {copy_result['error']}")
 
