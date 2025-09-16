@@ -9,6 +9,7 @@ from pathlib import Path
 
 import click
 
+from . import __version__
 from .backup import BackupManager
 from .config import load_config, save_config
 from .filesystem import (
@@ -27,7 +28,7 @@ from .github import (
 
 
 @click.group()
-@click.version_option(version="0.1.0")
+@click.version_option(version=__version__)
 def main():
     """Claude Command Deployer - Deploy and sync .claude commands across repositories."""
     pass
