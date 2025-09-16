@@ -6,11 +6,11 @@ Covers:
 - FR-006: CLI arguments and interactive prompts
 """
 
-import pytest
 from pathlib import Path
+
 from click.testing import CliRunner
 
-from specli.main import main, deploy, update
+from specli.main import deploy, main, update
 
 
 class TestMainCLI:
@@ -72,27 +72,31 @@ class TestDeployCommand:
             result = self.runner.invoke(deploy, ["https://github.com/user/source.git"])
 
             assert result.exit_code == 0
-            assert "Deploy command called with source: https://github.com/user/source.git" in result.output
+            assert (
+                "Deploy command called with source: https://github.com/user/source.git"
+                in result.output
+            )
             assert "Target path:" in result.output
 
     def test_deploy_with_path(self):
         """Test deploy command with source and target path."""
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(
-                deploy,
-                ["https://github.com/user/source.git", "--path", "/custom/path"]
+                deploy, ["https://github.com/user/source.git", "--path", "/custom/path"]
             )
 
             assert result.exit_code == 0
-            assert "Deploy command called with source: https://github.com/user/source.git" in result.output
+            assert (
+                "Deploy command called with source: https://github.com/user/source.git"
+                in result.output
+            )
             assert "Target path:" in result.output
 
     def test_deploy_dry_run(self):
         """Test deploy command with dry-run flag."""
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(
-                deploy,
-                ["https://github.com/user/source.git", "--dry-run"]
+                deploy, ["https://github.com/user/source.git", "--dry-run"]
             )
 
             assert result.exit_code == 0
@@ -166,12 +170,14 @@ class TestCLIIntegration:
         """Test deploy command through main CLI entry point."""
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(
-                main,
-                ["deploy", "https://github.com/user/source.git"]
+                main, ["deploy", "https://github.com/user/source.git"]
             )
 
             assert result.exit_code == 0
-            assert "Deploy command called with source: https://github.com/user/source.git" in result.output
+            assert (
+                "Deploy command called with source: https://github.com/user/source.git"
+                in result.output
+            )
             assert "Target path:" in result.output
 
     def test_main_update_integration(self):
@@ -217,7 +223,12 @@ class TestConfigIntegration:
             # We're mocking a successful deploy scenario by using dry-run to avoid GitHub API calls
             result = self.runner.invoke(
                 deploy,
-                ["https://github.com/user/source.git", "--path", str(target_path), "--dry-run"]
+                [
+                    "https://github.com/user/source.git",
+                    "--path",
+                    str(target_path),
+                    "--dry-run",
+                ],
             )
 
             # Verify the command ran
@@ -225,15 +236,21 @@ class TestConfigIntegration:
 
             # Check that config file was created
             config_file = target_path / "specli.settings.json"
-            assert config_file.exists(), "Deploy command should create a configuration file"
+            assert (
+                config_file.exists()
+            ), "Deploy command should create a configuration file"
 
             # If config file exists, verify its contents
             if config_file.exists():
                 import json
-                with open(config_file, 'r') as f:
+
+                with open(config_file) as f:
                     config_data = json.load(f)
-                assert config_data['repository_url'] == "https://github.com/user/source.git"
-                assert 'deployed_at' in config_data
+                assert (
+                    config_data["repository_url"]
+                    == "https://github.com/user/source.git"
+                )
+                assert "deployed_at" in config_data
 
     def test_update_reads_config_file(self):
         """Test that update command reads configuration file when no source is provided."""
@@ -244,19 +261,19 @@ class TestConfigIntegration:
 
             # Create a config file manually (simulating previous deploy)
             import json
+
             config_file = target_path / "specli.settings.json"
             config_data = {
                 "repository_url": "https://github.com/user/saved-repo.git",
                 "branch": None,
-                "deployed_at": "2024-01-15T10:30:00Z"
+                "deployed_at": "2024-01-15T10:30:00Z",
             }
-            with open(config_file, 'w') as f:
+            with open(config_file, "w") as f:
                 json.dump(config_data, f, indent=2)
 
             # Run update command without --source (should read from config)
             result = self.runner.invoke(
-                update,
-                ["--path", str(target_path), "--dry-run"]
+                update, ["--path", str(target_path), "--dry-run"]
             )
 
             # Verify the command ran
@@ -264,4 +281,6 @@ class TestConfigIntegration:
 
             # This test will fail initially because update doesn't read config yet
             # The update command should use the repository from config file, not prompt for input
-            assert "https://github.com/user/saved-repo.git" in result.output, "Update command should use repository from config file"
+            assert (
+                "https://github.com/user/saved-repo.git" in result.output
+            ), "Update command should use repository from config file"

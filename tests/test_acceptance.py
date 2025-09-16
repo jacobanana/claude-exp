@@ -13,7 +13,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
-import pytest
+
 from click.testing import CliRunner
 
 from specli.main import main
@@ -53,19 +53,23 @@ class TestAcceptanceScenarios:
         commands_dir.mkdir()
 
         # Add sample commands
-        (commands_dir / "deploy.md").write_text("""---
+        (commands_dir / "deploy.md").write_text(
+            """---
 description: Deploy commands to target repositories
 ---
 
 Deploy .claude commands from source to target repositories.
-""")
+"""
+        )
 
-        (commands_dir / "analyze.md").write_text("""---
+        (commands_dir / "analyze.md").write_text(
+            """---
 description: Analyze codebase structure
 ---
 
 Perform comprehensive codebase analysis and documentation.
-""")
+"""
+        )
 
         # Add settings
         (claude_dir / "settings.json").write_text('{"theme": "dark", "verbose": true}')
@@ -79,26 +83,32 @@ Perform comprehensive codebase analysis and documentation.
         commands_dir.mkdir()
 
         # Add old version of deploy command
-        (commands_dir / "deploy.md").write_text("""---
+        (commands_dir / "deploy.md").write_text(
+            """---
 description: Old deploy command
 ---
 
 Old version of deploy command.
-""")
+"""
+        )
 
         # Add a command that will be preserved
-        (commands_dir / "local_command.md").write_text("""---
+        (commands_dir / "local_command.md").write_text(
+            """---
 description: Local custom command
 ---
 
 This is a local custom command that should be preserved.
-""")
+"""
+        )
 
         # Add local settings
-        (claude_dir / "settings.local.json").write_text('{"local_setting": "preserve_me"}')
+        (claude_dir / "settings.local.json").write_text(
+            '{"local_setting": "preserve_me"}'
+        )
 
     # Acceptance Scenario 1: Basic deployment
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_scenario_1_deploy_claude_folder_to_target(self, mock_run):
         """
         Given a source repository with .claude commands and a target repository,
@@ -110,8 +120,7 @@ This is a local custom command that should be preserved.
 
         # Run deploy command
         result = self.runner.invoke(
-            main,
-            ['deploy', str(self.source_repo), '--path', str(self.target_repo1)]
+            main, ["deploy", str(self.source_repo), "--path", str(self.target_repo1)]
         )
 
         # Verify command executed successfully
@@ -125,7 +134,7 @@ This is a local custom command that should be preserved.
         # For now, we verify the command structure works
 
     # Acceptance Scenario 2: Update existing commands
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_scenario_2_update_existing_commands(self, mock_run):
         """
         Given a target repository that already has .claude commands,
@@ -141,7 +150,13 @@ This is a local custom command that should be preserved.
         # Run update command
         result = self.runner.invoke(
             main,
-            ['update', '--path', str(self.target_repo1), '--source', str(self.source_repo)]
+            [
+                "update",
+                "--path",
+                str(self.target_repo1),
+                "--source",
+                str(self.source_repo),
+            ],
         )
 
         # Verify command executed successfully
@@ -155,7 +170,7 @@ This is a local custom command that should be preserved.
         # - settings.local.json is preserved
 
     # Acceptance Scenario 3: Deploy to multiple targets
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_scenario_3_deploy_to_multiple_repositories(self, mock_run):
         """
         Given multiple target repositories specified,
@@ -167,14 +182,12 @@ This is a local custom command that should be preserved.
 
         # Run deploy command to first target
         result1 = self.runner.invoke(
-            main,
-            ['deploy', str(self.source_repo), '--path', str(self.target_repo1)]
+            main, ["deploy", str(self.source_repo), "--path", str(self.target_repo1)]
         )
 
         # Run deploy command to second target
         result2 = self.runner.invoke(
-            main,
-            ['deploy', str(self.source_repo), '--path', str(self.target_repo2)]
+            main, ["deploy", str(self.source_repo), "--path", str(self.target_repo2)]
         )
 
         # Verify both commands executed successfully
@@ -189,7 +202,7 @@ This is a local custom command that should be preserved.
         # - Both operations complete successfully
 
     # Acceptance Scenario 4: Update all targets with latest versions
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_scenario_4_update_all_targets_with_latest(self, mock_run):
         """
         Given the source repository is updated,
@@ -206,13 +219,25 @@ This is a local custom command that should be preserved.
         # Run update command on first target
         result1 = self.runner.invoke(
             main,
-            ['update', '--path', str(self.target_repo1), '--source', str(self.source_repo)]
+            [
+                "update",
+                "--path",
+                str(self.target_repo1),
+                "--source",
+                str(self.source_repo),
+            ],
         )
 
         # Run update command on second target
         result2 = self.runner.invoke(
             main,
-            ['update', '--path', str(self.target_repo2), '--source', str(self.source_repo)]
+            [
+                "update",
+                "--path",
+                str(self.target_repo2),
+                "--source",
+                str(self.source_repo),
+            ],
         )
 
         # Verify both commands executed successfully
@@ -227,7 +252,7 @@ This is a local custom command that should be preserved.
         # - Update operation succeeds for both targets
 
     # Acceptance Scenario 5: Error handling
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_scenario_5_handle_invalid_access_and_missing_folders(self, mock_run):
         """
         Given invalid repository access or missing .claude folder,
@@ -242,22 +267,21 @@ This is a local custom command that should be preserved.
         self._mock_successful_github_operations(mock_run)
 
         result = self.runner.invoke(
-            main,
-            ['deploy', str(empty_source), '--path', str(self.target_repo1)]
+            main, ["deploy", str(empty_source), "--path", str(self.target_repo1)]
         )
 
         # Command should still execute (error handling will be in implementation)
         assert result.exit_code == 0
 
         # Test case 5b: GitHub authentication failure
-        mock_run.side_effect = lambda args, **kwargs: Mock(
-            returncode=1,
-            stderr="ERROR: You are not authenticated with GitHub"
-        ) if 'gh' in args else Mock(returncode=0)
+        mock_run.side_effect = lambda args, **kwargs: (
+            Mock(returncode=1, stderr="ERROR: You are not authenticated with GitHub")
+            if "gh" in args
+            else Mock(returncode=0)
+        )
 
         result = self.runner.invoke(
-            main,
-            ['deploy', str(self.source_repo), 'https://github.com/private/repo']
+            main, ["deploy", str(self.source_repo), "https://github.com/private/repo"]
         )
 
         # In a real implementation, this would show authentication error
@@ -265,25 +289,19 @@ This is a local custom command that should be preserved.
 
     def _mock_successful_github_operations(self, mock_run):
         """Helper to mock successful GitHub CLI operations."""
+
         def gh_side_effect(args, **kwargs):
-            if 'gh' not in args:
+            if "gh" not in args:
                 return Mock(returncode=0)
 
-            if 'auth' in args and 'status' in args:
+            if "auth" in args and "status" in args:
                 return Mock(
-                    returncode=0,
-                    stdout="✓ Logged in to github.com as testuser"
+                    returncode=0, stdout="✓ Logged in to github.com as testuser"
                 )
-            elif 'api' in args and 'user' in args:
-                return Mock(
-                    returncode=0,
-                    stdout='{"login": "testuser"}'
-                )
-            elif 'repo' in args and 'clone' in args:
-                return Mock(
-                    returncode=0,
-                    stdout="Cloning into repository..."
-                )
+            elif "api" in args and "user" in args:
+                return Mock(returncode=0, stdout='{"login": "testuser"}')
+            elif "repo" in args and "clone" in args:
+                return Mock(returncode=0, stdout="Cloning into repository...")
             else:
                 return Mock(returncode=0, stdout="", stderr="")
 
@@ -301,8 +319,7 @@ class TestInteractiveScenarios:
         """Test that deploy command works with default path (current directory)."""
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(
-                main,
-                ['deploy', 'https://github.com/user/source', '--dry-run']
+                main, ["deploy", "https://github.com/user/source", "--dry-run"]
             )
 
             # Deploy should default to current directory
@@ -313,9 +330,7 @@ class TestInteractiveScenarios:
         with self.runner.isolated_filesystem():
             # Create a temp directory to work in (no config file present)
             result = self.runner.invoke(
-                main,
-                ['update'],
-                input='https://github.com/user/source\n'
+                main, ["update"], input="https://github.com/user/source\n"
             )
 
             assert "Enter source repository:" in result.output
@@ -326,7 +341,13 @@ class TestInteractiveScenarios:
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(
                 main,
-                ['deploy', 'https://github.com/user/source', '--path', 'target1', '--dry-run']
+                [
+                    "deploy",
+                    "https://github.com/user/source",
+                    "--path",
+                    "target1",
+                    "--dry-run",
+                ],
             )
 
             assert "Dry run mode - no changes would be made" in result.output
@@ -336,7 +357,14 @@ class TestInteractiveScenarios:
         with self.runner.isolated_filesystem():
             result = self.runner.invoke(
                 main,
-                ['update', '--path', 'target1', '--source', 'https://github.com/user/source', '--dry-run']
+                [
+                    "update",
+                    "--path",
+                    "target1",
+                    "--source",
+                    "https://github.com/user/source",
+                    "--dry-run",
+                ],
             )
 
             assert "Dry run mode - no changes would be made" in result.output
@@ -349,7 +377,7 @@ class TestEndToEndIntegration:
         """Set up test fixtures."""
         self.runner = CliRunner()
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_complete_deployment_workflow(self, mock_run):
         """Test complete deployment workflow from start to finish."""
         with self.runner.isolated_filesystem():
@@ -362,7 +390,13 @@ class TestEndToEndIntegration:
             # Test deploy workflow
             result = self.runner.invoke(
                 main,
-                ['deploy', 'https://github.com/user/claude-commands', '--path', 'user/target-repo', '--dry-run']
+                [
+                    "deploy",
+                    "https://github.com/user/claude-commands",
+                    "--path",
+                    "user/target-repo",
+                    "--dry-run",
+                ],
             )
 
             # Should show dry run output
@@ -371,7 +405,14 @@ class TestEndToEndIntegration:
             # Test update workflow
             result = self.runner.invoke(
                 main,
-                ['update', '--path', 'user/target-repo', '--source', 'https://github.com/user/claude-commands', '--dry-run']
+                [
+                    "update",
+                    "--path",
+                    "user/target-repo",
+                    "--source",
+                    "https://github.com/user/claude-commands",
+                    "--dry-run",
+                ],
             )
 
             # Should show dry run output
@@ -380,22 +421,22 @@ class TestEndToEndIntegration:
     def test_help_system_completeness(self):
         """Test that help system provides complete information."""
         # Test main help
-        result = self.runner.invoke(main, ['--help'])
+        result = self.runner.invoke(main, ["--help"])
         assert result.exit_code == 0
         assert "Claude Command Deployer" in result.output
 
         # Test deploy help
-        result = self.runner.invoke(main, ['deploy', '--help'])
+        result = self.runner.invoke(main, ["deploy", "--help"])
         assert result.exit_code == 0
         assert "Deploy .claude commands" in result.output
 
         # Test update help
-        result = self.runner.invoke(main, ['update', '--help'])
+        result = self.runner.invoke(main, ["update", "--help"])
         assert result.exit_code == 0
         assert "Update existing .claude commands" in result.output
 
     def test_version_information(self):
         """Test version information is available and correct."""
-        result = self.runner.invoke(main, ['--version'])
+        result = self.runner.invoke(main, ["--version"])
         assert result.exit_code == 0
         assert "0.1.0" in result.output

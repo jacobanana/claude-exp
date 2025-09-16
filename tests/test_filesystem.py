@@ -10,11 +10,10 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-import pytest
 
 # Import the modules that will be implemented
 # For now, we'll create the expected interface
-from unittest.mock import Mock, patch
+import pytest
 
 
 class TestClaudeFolderDetection:
@@ -109,7 +108,9 @@ class TestClaudeFolderCopying:
         assert (target_claude / "settings.json").exists()
 
         # Verify content
-        assert (target_claude / "commands" / "deploy.md").read_text() == "# Deploy command"
+        assert (
+            target_claude / "commands" / "deploy.md"
+        ).read_text() == "# Deploy command"
 
     def test_copy_preserves_file_structure(self):
         """Test that copying preserves the complete file structure."""
@@ -122,7 +123,9 @@ class TestClaudeFolderCopying:
         shutil.copytree(self.claude_source, target_claude)
 
         assert (target_claude / "commands" / "subdir" / "nested.md").exists()
-        assert (target_claude / "commands" / "subdir" / "nested.md").read_text() == "# Nested command"
+        assert (
+            target_claude / "commands" / "subdir" / "nested.md"
+        ).read_text() == "# Nested command"
 
     def test_copy_with_permissions(self):
         """Test that file permissions are preserved during copy."""
@@ -141,7 +144,7 @@ class TestClaudeFolderCopying:
         (existing_claude / "old_file.md").write_text("# Old file")
 
         # This would be the backup logic (to be implemented)
-        backup_name = f".claude.backup.{int(1000000)}"  # timestamp would be real
+        backup_name = f".claude.backup.{1000000}"  # timestamp would be real
         backup_path = self.target_repo / backup_name
 
         # Simulate backup creation
@@ -318,7 +321,9 @@ class TestFileSystemUtilities:
         (commands_dir / "test2.md").write_text("Another small file")
 
         # Calculate total size (simplified)
-        total_size = sum(f.stat().st_size for f in claude_path.rglob("*") if f.is_file())
+        total_size = sum(
+            f.stat().st_size for f in claude_path.rglob("*") if f.is_file()
+        )
         assert total_size > 0
 
     def test_validate_claude_folder_structure(self):

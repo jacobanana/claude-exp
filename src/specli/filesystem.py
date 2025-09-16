@@ -9,20 +9,21 @@ This module handles:
 - File system error handling
 """
 
-import os
 import shutil
 import time
 from pathlib import Path
-from typing import Optional, Dict, List, Tuple
+from typing import Dict, Optional
 
 
 class ClaudeFolderNotFoundError(Exception):
     """Raised when .claude folder is not found in source repository."""
+
     pass
 
 
 class ClaudeFolderCorruptedError(Exception):
     """Raised when .claude folder structure is corrupted or invalid."""
+
     pass
 
 
@@ -46,7 +47,9 @@ def detect_claude_folder(repo_path: Path) -> Path:
         raise ClaudeFolderNotFoundError(f"No .claude folder found in {repo_path}")
 
     if not claude_path.is_dir():
-        raise ClaudeFolderCorruptedError(f".claude exists but is not a directory in {repo_path}")
+        raise ClaudeFolderCorruptedError(
+            f".claude exists but is not a directory in {repo_path}"
+        )
 
     # Validate basic structure - commands directory should exist or be creatable
     commands_path = claude_path / "commands"
@@ -54,7 +57,9 @@ def detect_claude_folder(repo_path: Path) -> Path:
         # This is okay - some .claude folders might not have commands yet
         pass
     elif not commands_path.is_dir():
-        raise ClaudeFolderCorruptedError(f".claude/commands exists but is not a directory in {repo_path}")
+        raise ClaudeFolderCorruptedError(
+            f".claude/commands exists but is not a directory in {repo_path}"
+        )
 
     return claude_path
 
@@ -76,7 +81,7 @@ def get_claude_folder_info(claude_path: Path) -> Dict[str, any]:
         "command_count": 0,
         "has_settings": False,
         "has_local_settings": False,
-        "files": []
+        "files": [],
     }
 
     if not claude_path.exists():
@@ -127,7 +132,9 @@ def create_backup(claude_path: Path) -> Path:
     return backup_path
 
 
-def copy_claude_folder(source_path: Path, target_repo: Path, create_backup_if_exists: bool = True) -> Dict[str, any]:
+def copy_claude_folder(
+    source_path: Path, target_repo: Path, create_backup_if_exists: bool = True
+) -> Dict[str, any]:
     """
     Copy .claude folder from source to target repository.
 
@@ -140,7 +147,9 @@ def copy_claude_folder(source_path: Path, target_repo: Path, create_backup_if_ex
         Dictionary with copy operation results
     """
     if not source_path.exists():
-        raise ClaudeFolderNotFoundError(f"Source .claude folder does not exist: {source_path}")
+        raise ClaudeFolderNotFoundError(
+            f"Source .claude folder does not exist: {source_path}"
+        )
 
     target_claude = target_repo / ".claude"
     backup_path = None
@@ -153,7 +162,7 @@ def copy_claude_folder(source_path: Path, target_repo: Path, create_backup_if_ex
         "backup_path": None,
         "files_copied": 0,
         "bytes_copied": 0,
-        "error": None
+        "error": None,
     }
 
     try:
@@ -186,7 +195,9 @@ def copy_claude_folder(source_path: Path, target_repo: Path, create_backup_if_ex
     return result
 
 
-def merge_claude_folders(source_path: Path, target_path: Path, preserve_local: bool = True) -> Dict[str, any]:
+def merge_claude_folders(
+    source_path: Path, target_path: Path, preserve_local: bool = True
+) -> Dict[str, any]:
     """
     Merge source .claude folder into existing target .claude folder.
 
@@ -199,12 +210,16 @@ def merge_claude_folders(source_path: Path, target_path: Path, preserve_local: b
         Dictionary with merge operation results
     """
     if not source_path.exists():
-        raise ClaudeFolderNotFoundError(f"Source .claude folder does not exist: {source_path}")
+        raise ClaudeFolderNotFoundError(
+            f"Source .claude folder does not exist: {source_path}"
+        )
 
     if not target_path.exists():
         # If target doesn't exist, just copy
         target_repo = target_path.parent
-        return copy_claude_folder(source_path, target_repo, create_backup_if_exists=False)
+        return copy_claude_folder(
+            source_path, target_repo, create_backup_if_exists=False
+        )
 
     result = {
         "success": False,
@@ -212,7 +227,7 @@ def merge_claude_folders(source_path: Path, target_path: Path, preserve_local: b
         "files_added": 0,
         "files_preserved": 0,
         "conflicts": [],
-        "error": None
+        "error": None,
     }
 
     try:
@@ -273,8 +288,8 @@ def validate_claude_folder_structure(claude_path: Path) -> Dict[str, any]:
             "command_count": 0,
             "has_settings": False,
             "has_local_settings": False,
-            "total_files": 0
-        }
+            "total_files": 0,
+        },
     }
 
     if not claude_path.exists():
@@ -315,15 +330,21 @@ def validate_claude_folder_structure(claude_path: Path) -> Dict[str, any]:
         if local_settings_path.is_file():
             validation["structure"]["has_local_settings"] = True
         else:
-            validation["warnings"].append("settings.local.json exists but is not a file")
+            validation["warnings"].append(
+                "settings.local.json exists but is not a file"
+            )
 
     # Count total files
-    validation["structure"]["total_files"] = sum(1 for f in claude_path.rglob("*") if f.is_file())
+    validation["structure"]["total_files"] = sum(
+        1 for f in claude_path.rglob("*") if f.is_file()
+    )
 
     return validation
 
 
-def clean_claude_folder(claude_path: Path, remove_local_settings: bool = False) -> Dict[str, any]:
+def clean_claude_folder(
+    claude_path: Path, remove_local_settings: bool = False
+) -> Dict[str, any]:
     """
     Clean up .claude folder by removing temporary and cache files.
 
@@ -337,20 +358,10 @@ def clean_claude_folder(claude_path: Path, remove_local_settings: bool = False) 
     if not claude_path.exists():
         return {"success": False, "error": "Folder does not exist"}
 
-    result = {
-        "success": False,
-        "files_removed": 0,
-        "bytes_freed": 0,
-        "error": None
-    }
+    result = {"success": False, "files_removed": 0, "bytes_freed": 0, "error": None}
 
     try:
-        patterns_to_remove = [
-            "*.tmp",
-            "*.cache",
-            ".DS_Store",
-            "Thumbs.db"
-        ]
+        patterns_to_remove = ["*.tmp", "*.cache", ".DS_Store", "Thumbs.db"]
 
         if remove_local_settings:
             patterns_to_remove.append("settings.local.json")

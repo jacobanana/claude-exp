@@ -8,12 +8,13 @@ Covers:
 - FR-005: Override saved repository with new source
 """
 
-import pytest
-from pathlib import Path
-import tempfile
 import json
+import tempfile
+from pathlib import Path
 
-from specli.config import save_config, load_config
+import pytest
+
+from specli.config import load_config, save_config
 
 
 class TestConfigurationModuleStructure:
@@ -50,7 +51,7 @@ class TestConfigurationModuleStructure:
         """Test that save_config returns a dictionary with success status."""
         result = save_config("https://github.com/user/repo", self.config_path)
         assert isinstance(result, dict)
-        assert 'success' in result
+        assert "success" in result
 
     def test_load_config_returns_configuration_data(self):
         """Test that load_config returns configuration data."""
@@ -69,16 +70,14 @@ class TestConfigurationBasicBehavior:
     def test_save_config_with_minimal_parameters(self):
         """Test save_config with just repository URL and path."""
         result = save_config("https://github.com/user/repo", self.config_path)
-        assert result['success'] is True or result['success'] is False
+        assert result["success"] is True or result["success"] is False
 
     def test_save_config_with_optional_branch(self):
         """Test save_config with optional branch parameter."""
         result = save_config(
-            "https://github.com/user/repo",
-            self.config_path,
-            branch="main"
+            "https://github.com/user/repo", self.config_path, branch="main"
         )
-        assert result['success'] is True or result['success'] is False
+        assert result["success"] is True or result["success"] is False
 
     def test_load_config_from_empty_directory(self):
         """Test load_config when no configuration exists."""
@@ -109,6 +108,7 @@ class TestConfigurationFileSaving:
     def teardown_method(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_save_config_creates_json_file(self):
@@ -118,7 +118,7 @@ class TestConfigurationFileSaving:
         result = save_config(repository_url, self.config_path)
 
         # Verify the operation was successful
-        assert result['success'] is True
+        assert result["success"] is True
 
         # Verify the file was actually created
         assert self.config_file.exists()
@@ -129,37 +129,38 @@ class TestConfigurationFileSaving:
         repository_url = "https://github.com/user/test-repo"
         branch = "main"
 
-        result = save_config(repository_url, self.config_path, branch=branch)
+        save_config(repository_url, self.config_path, branch=branch)
 
         # Verify file exists and contains valid JSON
         assert self.config_file.exists()
 
-        with open(self.config_file, 'r') as f:
+        with open(self.config_file) as f:
             config_data = json.load(f)
 
         # Verify required fields are present
-        assert config_data['repository_url'] == repository_url
-        assert config_data['branch'] == branch
-        assert 'deployed_at' in config_data
+        assert config_data["repository_url"] == repository_url
+        assert config_data["branch"] == branch
+        assert "deployed_at" in config_data
 
         # Verify timestamp format (should be ISO format)
         from datetime import datetime
-        datetime.fromisoformat(config_data['deployed_at'].replace('Z', '+00:00'))
+
+        datetime.fromisoformat(config_data["deployed_at"].replace("Z", "+00:00"))
 
     def test_save_config_without_branch(self):
         """Test save_config works without optional branch parameter."""
         repository_url = "https://github.com/user/test-repo"
 
-        result = save_config(repository_url, self.config_path)
+        save_config(repository_url, self.config_path)
 
         assert self.config_file.exists()
 
-        with open(self.config_file, 'r') as f:
+        with open(self.config_file) as f:
             config_data = json.load(f)
 
-        assert config_data['repository_url'] == repository_url
-        assert config_data['branch'] is None
-        assert 'deployed_at' in config_data
+        assert config_data["repository_url"] == repository_url
+        assert config_data["branch"] is None
+        assert "deployed_at" in config_data
 
     def test_save_config_overwrites_existing_file(self):
         """Test that save_config overwrites existing configuration file."""
@@ -168,19 +169,19 @@ class TestConfigurationFileSaving:
         save_config(repository_url_1, self.config_path)
 
         # Verify initial content
-        with open(self.config_file, 'r') as f:
+        with open(self.config_file) as f:
             initial_data = json.load(f)
-        assert initial_data['repository_url'] == repository_url_1
+        assert initial_data["repository_url"] == repository_url_1
 
         # Overwrite with new config
         repository_url_2 = "https://github.com/user/repo2"
         save_config(repository_url_2, self.config_path, branch="develop")
 
         # Verify new content overwrote the old
-        with open(self.config_file, 'r') as f:
+        with open(self.config_file) as f:
             new_data = json.load(f)
-        assert new_data['repository_url'] == repository_url_2
-        assert new_data['branch'] == "develop"
+        assert new_data["repository_url"] == repository_url_2
+        assert new_data["branch"] == "develop"
 
     def test_save_config_creates_nonexistent_directory(self):
         """Test save_config creates nonexistent directories automatically."""
@@ -190,7 +191,7 @@ class TestConfigurationFileSaving:
         result = save_config(repository_url, nonexistent_path)
 
         # Should create the directory and succeed
-        assert result['success'] is True
+        assert result["success"] is True
         assert nonexistent_path.exists()
         assert (nonexistent_path / "specli.settings.json").exists()
 
@@ -198,7 +199,8 @@ class TestConfigurationFileSaving:
         """Test save_config behavior when file creation is denied."""
         # This test is platform-specific and may not work on all systems
         import os
-        if os.name == 'nt':  # Windows
+
+        if os.name == "nt":  # Windows
             # Skip this test on Windows due to permission model differences
             pytest.skip("Permission test not applicable on Windows")
 
@@ -210,8 +212,8 @@ class TestConfigurationFileSaving:
             result = save_config(repository_url, self.config_path)
 
             # Should handle the error gracefully
-            assert result['success'] is False
-            assert 'error' in result
+            assert result["success"] is False
+            assert "error" in result
         finally:
             # Restore permissions for cleanup
             os.chmod(self.config_path, 0o755)
@@ -229,6 +231,7 @@ class TestConfigurationFileReading:
     def teardown_method(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_load_config_reads_existing_file(self):
@@ -242,20 +245,20 @@ class TestConfigurationFileReading:
         result = load_config(self.config_path)
 
         # Verify the loaded data
-        assert result['config_exists'] is True
-        assert result['repository_url'] == repository_url
-        assert result['branch'] == branch
-        assert 'deployed_at' in result
+        assert result["config_exists"] is True
+        assert result["repository_url"] == repository_url
+        assert result["branch"] == branch
+        assert "deployed_at" in result
 
     def test_load_config_handles_missing_file(self):
         """Test load_config behavior when no configuration file exists."""
         result = load_config(self.config_path)
 
         # Should indicate no config exists
-        assert result['config_exists'] is False
-        assert result['repository_url'] is None
-        assert result['branch'] is None
-        assert result['config_file'] == self.config_file
+        assert result["config_exists"] is False
+        assert result["repository_url"] is None
+        assert result["branch"] is None
+        assert result["config_file"] == self.config_file
 
     def test_load_config_reads_file_without_branch(self):
         """Test load_config reads configuration saved without branch."""
@@ -264,9 +267,9 @@ class TestConfigurationFileReading:
 
         result = load_config(self.config_path)
 
-        assert result['config_exists'] is True
-        assert result['repository_url'] == repository_url
-        assert result['branch'] is None
+        assert result["config_exists"] is True
+        assert result["repository_url"] == repository_url
+        assert result["branch"] is None
 
     def test_load_config_validates_json_structure(self):
         """Test load_config validates the JSON structure is correct."""
@@ -276,47 +279,47 @@ class TestConfigurationFileReading:
         result = load_config(self.config_path)
 
         # Check all expected fields are present
-        assert 'repository_url' in result
-        assert 'branch' in result
-        assert 'deployed_at' in result
-        assert 'config_exists' in result
-        assert 'config_file' in result
+        assert "repository_url" in result
+        assert "branch" in result
+        assert "deployed_at" in result
+        assert "config_exists" in result
+        assert "config_file" in result
 
         # Verify field values
-        assert result['repository_url'] == repository_url
-        assert result['branch'] == "develop"
+        assert result["repository_url"] == repository_url
+        assert result["branch"] == "develop"
 
     def test_load_config_handles_corrupted_json(self):
         """Test load_config behavior with corrupted JSON file."""
         # Create a corrupted JSON file
-        with open(self.config_file, 'w') as f:
+        with open(self.config_file, "w") as f:
             f.write("{ invalid json content")
 
         result = load_config(self.config_path)
 
         # Should handle the error gracefully
-        assert result['config_exists'] is False
-        assert 'error' in result
+        assert result["config_exists"] is False
+        assert "error" in result
 
     def test_load_config_handles_invalid_json_structure(self):
         """Test load_config behavior with valid JSON but wrong structure."""
         # Create JSON with wrong structure
         invalid_config = {"wrong_field": "wrong_value"}
-        with open(self.config_file, 'w') as f:
+        with open(self.config_file, "w") as f:
             json.dump(invalid_config, f)
 
         result = load_config(self.config_path)
 
         # Should handle the invalid structure
-        assert result['config_exists'] is False
-        assert 'error' in result
+        assert result["config_exists"] is False
+        assert "error" in result
 
     def test_load_config_preserves_file_path_info(self):
         """Test that load_config returns file path information."""
         result = load_config(self.config_path)
 
-        assert result['config_file'] == self.config_file
-        assert str(self.config_path) in str(result['config_file'])
+        assert result["config_file"] == self.config_file
+        assert str(self.config_path) in str(result["config_file"])
 
     def test_load_config_multiple_reads_consistent(self):
         """Test that multiple reads of the same config return consistent data."""
@@ -327,9 +330,9 @@ class TestConfigurationFileReading:
         result2 = load_config(self.config_path)
 
         # Results should be identical
-        assert result1['repository_url'] == result2['repository_url']
-        assert result1['branch'] == result2['branch']
-        assert result1['deployed_at'] == result2['deployed_at']
+        assert result1["repository_url"] == result2["repository_url"]
+        assert result1["branch"] == result2["branch"]
+        assert result1["deployed_at"] == result2["deployed_at"]
 
 
 class TestConfigurationOverride:
@@ -344,6 +347,7 @@ class TestConfigurationOverride:
     def teardown_method(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_override_existing_repository_url(self):
@@ -354,21 +358,22 @@ class TestConfigurationOverride:
 
         # Load to verify initial state
         initial_config = load_config(self.config_path)
-        assert initial_config['repository_url'] == original_repo
-        assert initial_config['branch'] == "main"
+        assert initial_config["repository_url"] == original_repo
+        assert initial_config["branch"] == "main"
 
         # Override with new repository (add small delay to ensure different timestamp)
         import time
+
         time.sleep(1)
         new_repo = "https://github.com/user/new-repo"
         save_config(new_repo, self.config_path, branch="develop")
 
         # Load and verify override worked
         updated_config = load_config(self.config_path)
-        assert updated_config['repository_url'] == new_repo
-        assert updated_config['branch'] == "develop"
+        assert updated_config["repository_url"] == new_repo
+        assert updated_config["branch"] == "develop"
         # Timestamp should be updated
-        assert updated_config['deployed_at'] != initial_config['deployed_at']
+        assert updated_config["deployed_at"] != initial_config["deployed_at"]
 
     def test_override_preserves_file_location(self):
         """Test that override operations preserve the config file location."""
@@ -379,7 +384,7 @@ class TestConfigurationOverride:
         result = save_config(new_repo, self.config_path)
 
         # File should still be in the same location
-        assert result['config_file'] == self.config_file
+        assert result["config_file"] == self.config_file
         assert self.config_file.exists()
 
     def test_override_from_branch_to_no_branch(self):
@@ -387,31 +392,31 @@ class TestConfigurationOverride:
         # Initial config with branch
         save_config("https://github.com/user/repo", self.config_path, branch="feature")
         initial_config = load_config(self.config_path)
-        assert initial_config['branch'] == "feature"
+        assert initial_config["branch"] == "feature"
 
         # Override without branch
         save_config("https://github.com/user/repo", self.config_path)
         updated_config = load_config(self.config_path)
-        assert updated_config['branch'] is None
+        assert updated_config["branch"] is None
 
     def test_override_from_no_branch_to_branch(self):
         """Test overriding configuration from no branch to having a branch."""
         # Initial config without branch
         save_config("https://github.com/user/repo", self.config_path)
         initial_config = load_config(self.config_path)
-        assert initial_config['branch'] is None
+        assert initial_config["branch"] is None
 
         # Override with branch
         save_config("https://github.com/user/repo", self.config_path, branch="main")
         updated_config = load_config(self.config_path)
-        assert updated_config['branch'] == "main"
+        assert updated_config["branch"] == "main"
 
     def test_multiple_overrides(self):
         """Test multiple consecutive overrides work correctly."""
         repos = [
             "https://github.com/user/repo1",
             "https://github.com/user/repo2",
-            "https://github.com/user/repo3"
+            "https://github.com/user/repo3",
         ]
 
         # Apply multiple overrides
@@ -421,13 +426,13 @@ class TestConfigurationOverride:
 
             # Verify each override worked
             config = load_config(self.config_path)
-            assert config['repository_url'] == repo
-            assert config['branch'] == branch
+            assert config["repository_url"] == repo
+            assert config["branch"] == branch
 
         # Final verification
         final_config = load_config(self.config_path)
-        assert final_config['repository_url'] == repos[-1]
-        assert final_config['branch'] == "branch-2"  # Last branch was branch-2
+        assert final_config["repository_url"] == repos[-1]
+        assert final_config["branch"] == "branch-2"  # Last branch was branch-2
 
     def test_override_handles_same_repository_different_branch(self):
         """Test overriding with same repository but different branch."""
@@ -439,11 +444,12 @@ class TestConfigurationOverride:
 
         # Override with same repo, different branch (add small delay)
         import time
+
         time.sleep(1)
         save_config(repo_url, self.config_path, branch="develop")
         updated_config = load_config(self.config_path)
 
         # Repository should be same, branch should be updated
-        assert updated_config['repository_url'] == repo_url
-        assert updated_config['branch'] == "develop"
-        assert updated_config['deployed_at'] != initial_config['deployed_at']
+        assert updated_config["repository_url"] == repo_url
+        assert updated_config["branch"] == "develop"
+        assert updated_config["deployed_at"] != initial_config["deployed_at"]

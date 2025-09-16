@@ -15,26 +15,29 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from urllib.parse import urlparse
 
 
 class GitHubCLIError(Exception):
     """Base exception for GitHub CLI related errors."""
+
     pass
 
 
 class GitHubCLINotFoundError(GitHubCLIError):
     """Raised when GitHub CLI is not installed or not found."""
+
     pass
 
 
 class GitHubAuthenticationError(GitHubCLIError):
     """Raised when GitHub authentication fails or is missing."""
+
     pass
 
 
 class GitHubRepositoryError(GitHubCLIError):
     """Raised when repository access or operations fail."""
+
     pass
 
 
@@ -50,10 +53,7 @@ def check_github_cli() -> Dict[str, any]:
     """
     try:
         result = subprocess.run(
-            ['gh', '--version'],
-            capture_output=True,
-            text=True,
-            timeout=10
+            ["gh", "--version"], capture_output=True, text=True, timeout=10
         )
 
         if result.returncode != 0:
@@ -61,19 +61,15 @@ def check_github_cli() -> Dict[str, any]:
 
         version_output = result.stdout.strip()
         # Parse version from output like "gh version 2.40.1 (2023-12-13)"
-        version_match = re.search(r'gh version (\d+\.\d+\.\d+)', version_output)
+        version_match = re.search(r"gh version (\d+\.\d+\.\d+)", version_output)
         version = version_match.group(1) if version_match else "unknown"
 
-        return {
-            "installed": True,
-            "version": version,
-            "raw_output": version_output
-        }
+        return {"installed": True, "version": version, "raw_output": version_output}
 
-    except FileNotFoundError:
-        raise GitHubCLINotFoundError("GitHub CLI (gh) is not installed or not in PATH")
-    except subprocess.TimeoutExpired:
-        raise GitHubCLINotFoundError("GitHub CLI check timed out")
+    except FileNotFoundError as e:
+        raise GitHubCLINotFoundError("GitHub CLI (gh) is not installed or not in PATH") from e
+    except subprocess.TimeoutExpired as e:
+        raise GitHubCLINotFoundError("GitHub CLI check timed out") from e
 
 
 def check_authentication() -> Dict[str, any]:
@@ -89,21 +85,17 @@ def check_authentication() -> Dict[str, any]:
     try:
         # Check auth status
         result = subprocess.run(
-            ['gh', 'auth', 'status'],
-            capture_output=True,
-            text=True,
-            timeout=10
+            ["gh", "auth", "status"], capture_output=True, text=True, timeout=10
         )
 
         if result.returncode != 0:
-            raise GitHubAuthenticationError(f"Not authenticated with GitHub: {result.stderr}")
+            raise GitHubAuthenticationError(
+                f"Not authenticated with GitHub: {result.stderr}"
+            )
 
         # Get user info
         user_result = subprocess.run(
-            ['gh', 'api', 'user'],
-            capture_output=True,
-            text=True,
-            timeout=10
+            ["gh", "api", "user"], capture_output=True, text=True, timeout=10
         )
 
         user_info = {}
@@ -113,7 +105,7 @@ def check_authentication() -> Dict[str, any]:
                 user_info = {
                     "login": user_data.get("login"),
                     "id": user_data.get("id"),
-                    "name": user_data.get("name")
+                    "name": user_data.get("name"),
                 }
             except json.JSONDecodeError:
                 pass
@@ -121,11 +113,11 @@ def check_authentication() -> Dict[str, any]:
         return {
             "authenticated": True,
             "status_output": result.stdout,
-            "user": user_info
+            "user": user_info,
         }
 
-    except subprocess.TimeoutExpired:
-        raise GitHubAuthenticationError("Authentication check timed out")
+    except subprocess.TimeoutExpired as e:
+        raise GitHubAuthenticationError("Authentication check timed out") from e
 
 
 def parse_repository_url(repo_url: str) -> Tuple[str, str]:
@@ -148,26 +140,26 @@ def parse_repository_url(repo_url: str) -> Tuple[str, str]:
     # - git@github.com:user/repo.git
 
     # Simple owner/repo format
-    if '/' in repo_url and '://' not in repo_url and '@' not in repo_url:
-        parts = repo_url.split('/')
+    if "/" in repo_url and "://" not in repo_url and "@" not in repo_url:
+        parts = repo_url.split("/")
         if len(parts) == 2:
             return parts[0], parts[1]
 
     # HTTPS URLs
-    if repo_url.startswith('https://github.com/'):
-        path = repo_url.replace('https://github.com/', '')
-        if path.endswith('.git'):
+    if repo_url.startswith("https://github.com/"):
+        path = repo_url.replace("https://github.com/", "")
+        if path.endswith(".git"):
             path = path[:-4]
-        parts = path.split('/')
+        parts = path.split("/")
         if len(parts) >= 2:
             return parts[0], parts[1]
 
     # SSH URLs
-    if repo_url.startswith('git@github.com:'):
-        path = repo_url.replace('git@github.com:', '')
-        if path.endswith('.git'):
+    if repo_url.startswith("git@github.com:"):
+        path = repo_url.replace("git@github.com:", "")
+        if path.endswith(".git"):
             path = path[:-4]
-        parts = path.split('/')
+        parts = path.split("/")
         if len(parts) >= 2:
             return parts[0], parts[1]
 
@@ -192,10 +184,10 @@ def validate_repository_access(repo_url: str) -> Dict[str, any]:
         repo_identifier = f"{owner}/{repo}"
 
         result = subprocess.run(
-            ['gh', 'api', f'repos/{repo_identifier}'],
+            ["gh", "api", f"repos/{repo_identifier}"],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
 
         if result.returncode != 0:
@@ -203,9 +195,13 @@ def validate_repository_access(repo_url: str) -> Dict[str, any]:
             if "404" in error_msg:
                 raise GitHubRepositoryError(f"Repository not found: {repo_identifier}")
             elif "403" in error_msg:
-                raise GitHubRepositoryError(f"Access denied to repository: {repo_identifier}")
+                raise GitHubRepositoryError(
+                    f"Access denied to repository: {repo_identifier}"
+                )
             else:
-                raise GitHubRepositoryError(f"Failed to access repository {repo_identifier}: {error_msg}")
+                raise GitHubRepositoryError(
+                    f"Failed to access repository {repo_identifier}: {error_msg}"
+                )
 
         try:
             repo_data = json.loads(result.stdout)
@@ -217,18 +213,22 @@ def validate_repository_access(repo_url: str) -> Dict[str, any]:
                 "private": repo_data.get("private", False),
                 "clone_url": repo_data.get("clone_url"),
                 "permissions": repo_data.get("permissions", {}),
-                "default_branch": repo_data.get("default_branch", "main")
+                "default_branch": repo_data.get("default_branch", "main"),
             }
-        except json.JSONDecodeError:
-            raise GitHubRepositoryError(f"Invalid response from GitHub API for {repo_identifier}")
+        except json.JSONDecodeError as e:
+            raise GitHubRepositoryError(
+                f"Invalid response from GitHub API for {repo_identifier}"
+            ) from e
 
     except ValueError as e:
-        raise GitHubRepositoryError(str(e))
-    except subprocess.TimeoutExpired:
-        raise GitHubRepositoryError(f"Repository validation timed out for {repo_url}")
+        raise GitHubRepositoryError(str(e)) from e
+    except subprocess.TimeoutExpired as e:
+        raise GitHubRepositoryError(f"Repository validation timed out for {repo_url}") from e
 
 
-def clone_repository(repo_url: str, target_dir: Optional[Path] = None) -> Dict[str, any]:
+def clone_repository(
+    repo_url: str, target_dir: Optional[Path] = None
+) -> Dict[str, any]:
     """
     Clone a repository using GitHub CLI.
 
@@ -254,16 +254,18 @@ def clone_repository(repo_url: str, target_dir: Optional[Path] = None) -> Dict[s
 
         # Change to target directory for cloning
         result = subprocess.run(
-            ['gh', 'repo', 'clone', repo_identifier],
+            ["gh", "repo", "clone", repo_identifier],
             capture_output=True,
             text=True,
             cwd=target_dir,
-            timeout=300  # 5 minutes for cloning
+            timeout=300,  # 5 minutes for cloning
         )
 
         if result.returncode != 0:
             error_msg = result.stderr.strip()
-            raise GitHubRepositoryError(f"Failed to clone {repo_identifier}: {error_msg}")
+            raise GitHubRepositoryError(
+                f"Failed to clone {repo_identifier}: {error_msg}"
+            )
 
         repo_path = target_dir / repo
         return {
@@ -272,13 +274,13 @@ def clone_repository(repo_url: str, target_dir: Optional[Path] = None) -> Dict[s
             "target_directory": target_dir,
             "owner": owner,
             "repo_name": repo,
-            "output": result.stdout
+            "output": result.stdout,
         }
 
     except ValueError as e:
-        raise GitHubRepositoryError(str(e))
-    except subprocess.TimeoutExpired:
-        raise GitHubRepositoryError(f"Repository cloning timed out for {repo_url}")
+        raise GitHubRepositoryError(str(e)) from e
+    except subprocess.TimeoutExpired as e:
+        raise GitHubRepositoryError(f"Repository cloning timed out for {repo_url}") from e
 
 
 def list_repository_contents(repo_url: str, path: str = "") -> List[Dict[str, any]]:
@@ -304,15 +306,14 @@ def list_repository_contents(repo_url: str, path: str = "") -> List[Dict[str, an
             endpoint += f"/{path}"
 
         result = subprocess.run(
-            ['gh', 'api', endpoint],
-            capture_output=True,
-            text=True,
-            timeout=30
+            ["gh", "api", endpoint], capture_output=True, text=True, timeout=30
         )
 
         if result.returncode != 0:
             error_msg = result.stderr.strip()
-            raise GitHubRepositoryError(f"Failed to list contents of {repo_identifier}/{path}: {error_msg}")
+            raise GitHubRepositoryError(
+                f"Failed to list contents of {repo_identifier}/{path}: {error_msg}"
+            )
 
         try:
             contents = json.loads(result.stdout)
@@ -323,7 +324,7 @@ def list_repository_contents(repo_url: str, path: str = "") -> List[Dict[str, an
                         "type": item.get("type"),  # "file" or "dir"
                         "size": item.get("size", 0),
                         "path": item.get("path"),
-                        "download_url": item.get("download_url")
+                        "download_url": item.get("download_url"),
                     }
                     for item in contents
                 ]
@@ -335,17 +336,21 @@ def list_repository_contents(repo_url: str, path: str = "") -> List[Dict[str, an
                         "type": contents.get("type"),
                         "size": contents.get("size", 0),
                         "path": contents.get("path"),
-                        "download_url": contents.get("download_url")
+                        "download_url": contents.get("download_url"),
                     }
                 ]
 
-        except json.JSONDecodeError:
-            raise GitHubRepositoryError(f"Invalid response from GitHub API for {repo_identifier}/{path}")
+        except json.JSONDecodeError as e:
+            raise GitHubRepositoryError(
+                f"Invalid response from GitHub API for {repo_identifier}/{path}"
+            ) from e
 
     except ValueError as e:
-        raise GitHubRepositoryError(str(e))
-    except subprocess.TimeoutExpired:
-        raise GitHubRepositoryError(f"Repository contents listing timed out for {repo_url}")
+        raise GitHubRepositoryError(str(e)) from e
+    except subprocess.TimeoutExpired as e:
+        raise GitHubRepositoryError(
+            f"Repository contents listing timed out for {repo_url}"
+        ) from e
 
 
 def check_repository_has_claude_folder(repo_url: str) -> bool:
@@ -360,7 +365,9 @@ def check_repository_has_claude_folder(repo_url: str) -> bool:
     """
     try:
         contents = list_repository_contents(repo_url)
-        return any(item["name"] == ".claude" and item["type"] == "dir" for item in contents)
+        return any(
+            item["name"] == ".claude" and item["type"] == "dir" for item in contents
+        )
     except GitHubRepositoryError:
         return False
 
@@ -386,7 +393,7 @@ def get_repository_permissions(repo_url: str) -> Dict[str, bool]:
         "push": permissions.get("push", False),
         "pull": permissions.get("pull", False),
         "maintain": permissions.get("maintain", False),
-        "triage": permissions.get("triage", False)
+        "triage": permissions.get("triage", False),
     }
 
 
@@ -400,19 +407,12 @@ def validate_multiple_repositories(repo_urls: List[str]) -> Dict[str, any]:
     Returns:
         Dictionary with validation results for each repository
     """
-    results = {
-        "valid_repositories": [],
-        "invalid_repositories": [],
-        "errors": {}
-    }
+    results = {"valid_repositories": [], "invalid_repositories": [], "errors": {}}
 
     for repo_url in repo_urls:
         try:
             repo_info = validate_repository_access(repo_url)
-            results["valid_repositories"].append({
-                "url": repo_url,
-                "info": repo_info
-            })
+            results["valid_repositories"].append({"url": repo_url, "info": repo_info})
         except GitHubRepositoryError as e:
             results["invalid_repositories"].append(repo_url)
             results["errors"][repo_url] = str(e)
@@ -435,7 +435,7 @@ def ensure_github_setup() -> Dict[str, any]:
         "cli_version": None,
         "authenticated": False,
         "user_info": {},
-        "ready": False
+        "ready": False,
     }
 
     # Check CLI installation
@@ -444,7 +444,7 @@ def ensure_github_setup() -> Dict[str, any]:
         setup_info["cli_installed"] = True
         setup_info["cli_version"] = cli_info["version"]
     except GitHubCLINotFoundError as e:
-        raise GitHubCLIError(f"GitHub CLI setup required: {e}")
+        raise GitHubCLIError(f"GitHub CLI setup required: {e}") from e
 
     # Check authentication
     try:
@@ -452,7 +452,7 @@ def ensure_github_setup() -> Dict[str, any]:
         setup_info["authenticated"] = True
         setup_info["user_info"] = auth_info["user"]
     except GitHubAuthenticationError as e:
-        raise GitHubCLIError(f"GitHub authentication required: {e}")
+        raise GitHubCLIError(f"GitHub authentication required: {e}") from e
 
     setup_info["ready"] = True
     return setup_info
