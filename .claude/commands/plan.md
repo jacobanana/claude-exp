@@ -57,41 +57,103 @@ If validation fails, stop and request clarification.
 - **ENV-002**: [Specific tooling setup task]
 - **ENV-003**: [Specific dependency installation task]
 
-### Phase 1: **Test Foundation**
+### Phase 1: **Initial Test Structure**
 **Dependencies**: Phase 0 complete
-**Parallel Work**: [Specify which tasks can run in parallel]
+**TDD Rule**: Create failing tests for core structure only
 
-- **TEST-001**: [Specific test setup task] 
-  - **Covers**: FR-xxx, Acceptance Scenario x
-  - **Definition**: [Clear, unambiguous task description]
-- **TEST-002**: [Specific test implementation task]
-  - **Covers**: FR-xxx, Acceptance Scenario x
-  - **Definition**: [Clear, unambiguous task description]
+- **TEST-001**: Write failing tests for [core structure/interfaces]
+  - **Covers**: Basic structure for FR-xxx
+  - **Definition**: Write tests that define interfaces and basic structure
+  - **Expected Result**: Tests MUST fail (Red phase)
+- **IMPL-001**: Implement minimal structure to make Phase 1 tests pass
+  - **Covers**: Basic scaffolding for FR-xxx
+  - **Definition**: Create minimal code to make TEST-001 pass (Green phase)
+  - **Expected Result**: Phase 1 tests pass, no additional functionality
 
-### Phase 2: **Core Implementation**
+### Phase 2: **Feature Implementation (TDD Cycles)**
 **Dependencies**: Phase 1 complete
-**Parallel Work**: [Specify which tasks can run in parallel]
+**TDD Rule**: Each task follows strict Red-Green-Refactor cycle
 
-- **IMPL-001**: [Specific implementation task]
-  - **Covers**: FR-xxx
-  - **Prerequisites**: TEST-xxx passing
-  - **Definition**: [Clear, unambiguous task description]
+For each functional requirement, create separate TDD cycles:
 
-### Phase 3: **Integration & Validation**
+**TDD Cycle 2A: [First Feature]**
+- **TEST-2A1**: Write failing test for [specific feature behavior]
+  - **Covers**: FR-xxx specific scenario
+  - **Definition**: Write test that validates [specific behavior]
+  - **Validation**: Run test - MUST fail
+- **IMPL-2A1**: Implement [specific feature] to make TEST-2A1 pass
+  - **Prerequisites**: TEST-2A1 is failing
+  - **Definition**: Write minimal code to make TEST-2A1 pass
+  - **Validation**: Run TEST-2A1 - MUST pass, all other tests still pass
+- **REFACTOR-2A1**: Refactor [specific feature] if needed
+  - **Prerequisites**: TEST-2A1 passing
+  - **Definition**: Improve code quality without changing behavior
+  - **Validation**: All tests still pass after refactoring
+
+**TDD Cycle 2B: [Second Feature]**
+- **TEST-2B1**: Write failing test for [next feature behavior]
+  - **Covers**: FR-xxx specific scenario
+  - **Prerequisites**: TDD Cycle 2A complete
+  - **Validation**: Run test - MUST fail, all previous tests still pass
+- **IMPL-2B1**: Implement [next feature] to make TEST-2B1 pass
+  - **Prerequisites**: TEST-2B1 is failing
+  - **Validation**: Run all tests - TEST-2B1 and all previous tests MUST pass
+- **REFACTOR-2B1**: Refactor if needed
+  - **Validation**: All tests still pass
+
+**Continue pattern for each functional requirement...**
+
+### Phase 3: **Integration Testing (TDD Cycles)**
 **Dependencies**: Phase 2 complete
 
-- **INT-001**: [Integration task]
-- **VAL-001**: [Validation against acceptance scenarios]
+**TDD Cycle 3A: Integration Tests**
+- **TEST-3A1**: Write failing integration tests
+  - **Covers**: End-to-end acceptance scenarios
+  - **Definition**: Write tests that validate complete user workflows
+  - **Validation**: Tests MUST fail initially
+- **IMPL-3A1**: Implement integration logic to make tests pass
+  - **Prerequisites**: TEST-3A1 failing
+  - **Validation**: All tests (unit + integration) pass
+
+### Phase 4: **Acceptance Validation**
+**Dependencies**: Phase 3 complete
+
+- **VAL-001**: Validate each Given-When-Then scenario
+  - **Method**: Run automated tests that mirror acceptance criteria
+  - **Expected**: All acceptance scenarios pass
 
 ## Task Definition Standards:
 
 Each task must include:
-- **Task ID**: Unique identifier (ENV-xxx, TEST-xxx, IMPL-xxx, INT-xxx, VAL-xxx)
+- **Task ID**: Unique identifier (ENV-xxx, TEST-xxx, IMPL-xxx, REFACTOR-xxx, VAL-xxx)
 - **Covers**: Which FR-xxx or acceptance scenario it addresses
 - **Dependencies**: What must be complete before starting
+- **Prerequisites**: Specific conditions that must be met (e.g., "TEST-2A1 is failing")
 - **Definition**: Clear, specific description of what to do
-- **Acceptance**: How to know the task is complete
-- **Estimated Effort**: Time/complexity estimate
+- **Validation**: How to verify the task is complete (including test states)
+- **Expected Result**: Explicit expectation (tests fail, tests pass, etc.)
+
+## TDD Enforcement Rules:
+
+**CRITICAL**: Every implementation task must follow this exact sequence:
+
+1. **Write Failing Test**: 
+   - Task: TEST-xxx
+   - Validation: Run test - MUST return failure/red
+   - Cannot proceed until test fails
+
+2. **Implement Minimal Code**:
+   - Task: IMPL-xxx  
+   - Prerequisites: TEST-xxx is failing
+   - Validation: Run TEST-xxx - MUST pass, all previous tests still pass
+   - Write ONLY enough code to make the failing test pass
+
+3. **Refactor if Needed**:
+   - Task: REFACTOR-xxx (optional)
+   - Prerequisites: All tests passing
+   - Validation: All tests still pass after refactoring
+
+**RED-GREEN-REFACTOR CYCLE MUST BE EXPLICIT IN EVERY TASK**
 
 ## Questions to Address:
 
@@ -111,6 +173,13 @@ Structure the plan as:
 ```markdown
 # Implementation Plan: [SPEC_NAME]
 
+## Progress Tracking
+**Instructions for Claude Code**: Before starting any task, you MUST:
+1. Verify all prerequisites are marked as ✅ COMPLETE
+2. Update task status to 🔄 IN PROGRESS when starting
+3. Update task status to ✅ COMPLETE when finished
+4. Validate all task requirements before marking complete
+
 ## Specification Summary
 [Brief summary of what's being implemented]
 
@@ -121,7 +190,113 @@ Structure the plan as:
 [Table showing FR-xxx → Task coverage]
 
 ## Implementation Phases
-[Detailed phase breakdown with dependencies and parallel work]
+
+### Phase 0: Environment & Setup ⬜ NOT STARTED / 🔄 IN PROGRESS / ✅ COMPLETE
+**Status**: ⬜ NOT STARTED
+**Dependencies**: None
+**All tasks can run in parallel**
+
+- [ ] **ENV-001**: [Specific environment setup task]
+  - **Status**: ⬜ NOT STARTED
+  - **Validation**: [How to verify complete]
+  
+- [ ] **ENV-002**: [Specific tooling setup task]  
+  - **Status**: ⬜ NOT STARTED
+  - **Validation**: [How to verify complete]
+
+### Phase 1: Initial Test Structure ⬜ NOT STARTED / 🔄 IN PROGRESS / ✅ COMPLETE
+**Status**: ⬜ NOT STARTED
+**Dependencies**: Phase 0 ✅ COMPLETE
+**TDD Rule**: Create failing tests for core structure only
+
+- [ ] **TEST-001**: Write failing tests for [core structure]
+  - **Status**: ⬜ NOT STARTED
+  - **Prerequisites**: Phase 0 ✅ COMPLETE
+  - **Covers**: Basic structure for FR-xxx
+  - **Expected Result**: Tests MUST fail (Red phase)
+  - **Validation**: Run tests - verify they fail
+  
+- [ ] **IMPL-001**: Implement minimal structure 
+  - **Status**: ⬜ NOT STARTED
+  - **Prerequisites**: TEST-001 ✅ COMPLETE (and failing)
+  - **Expected Result**: Phase 1 tests pass, no additional functionality
+  - **Validation**: Run TEST-001 - must pass, no other functionality
+
+### Phase 2: Feature Implementation (TDD Cycles) ⬜ NOT STARTED / 🔄 IN PROGRESS / ✅ COMPLETE
+**Status**: ⬜ NOT STARTED  
+**Dependencies**: Phase 1 ✅ COMPLETE
+
+#### TDD Cycle 2A: [First Feature] ⬜ NOT STARTED / 🔄 IN PROGRESS / ✅ COMPLETE
+**Status**: ⬜ NOT STARTED
+
+- [ ] **TEST-2A1**: Write failing test for [specific behavior]
+  - **Status**: ⬜ NOT STARTED
+  - **Prerequisites**: Phase 1 ✅ COMPLETE
+  - **Covers**: FR-xxx specific scenario
+  - **Expected Result**: New test MUST fail, existing tests still pass
+  - **Validation**: Run test suite - TEST-2A1 fails, others pass
+  
+- [ ] **IMPL-2A1**: Implement [specific feature]
+  - **Status**: ⬜ NOT STARTED  
+  - **Prerequisites**: TEST-2A1 ✅ COMPLETE (and failing)
+  - **Expected Result**: TEST-2A1 passes, all tests pass
+  - **Validation**: Run full test suite - all tests pass
+  
+- [ ] **REFACTOR-2A1**: Refactor [specific feature] (if needed)
+  - **Status**: ⬜ NOT STARTED
+  - **Prerequisites**: IMPL-2A1 ✅ COMPLETE (all tests passing)
+  - **Expected Result**: Code improved, all tests still pass
+  - **Validation**: Run full test suite - all tests still pass
+
+#### TDD Cycle 2B: [Second Feature] ⬜ NOT STARTED / 🔄 IN PROGRESS / ✅ COMPLETE
+**Status**: ⬜ NOT STARTED
+**Prerequisites**: TDD Cycle 2A ✅ COMPLETE
+
+[Continue pattern for each feature...]
+
+### Phase 3: Integration Testing ⬜ NOT STARTED / 🔄 IN PROGRESS / ✅ COMPLETE
+**Status**: ⬜ NOT STARTED
+**Dependencies**: Phase 2 ✅ COMPLETE
+
+#### TDD Cycle 3A: Integration Tests ⬜ NOT STARTED / 🔄 IN PROGRESS / ✅ COMPLETE
+**Status**: ⬜ NOT STARTED
+
+- [ ] **TEST-3A1**: Write failing integration tests
+  - **Status**: ⬜ NOT STARTED
+  - **Prerequisites**: Phase 2 ✅ COMPLETE
+  - **Expected Result**: Integration tests MUST fail initially
+  - **Validation**: Run integration tests - must fail
+  
+- [ ] **IMPL-3A1**: Implement integration logic
+  - **Status**: ⬜ NOT STARTED
+  - **Prerequisites**: TEST-3A1 ✅ COMPLETE (and failing)
+  - **Expected Result**: All tests pass (unit + integration)
+  - **Validation**: Run complete test suite - all pass
+
+### Phase 4: Acceptance Validation ⬜ NOT STARTED / 🔄 IN PROGRESS / ✅ COMPLETE
+**Status**: ⬜ NOT STARTED
+**Dependencies**: Phase 3 ✅ COMPLETE
+
+- [ ] **VAL-001**: Validate Given-When-Then scenario 1
+  - **Status**: ⬜ NOT STARTED
+  - **Prerequisites**: Phase 3 ✅ COMPLETE
+  - **Covers**: [Specific acceptance scenario]
+  - **Validation**: Manual/automated test matches acceptance criteria
+  
+[Continue for each acceptance scenario...]
+
+## Task Status Legend
+- ⬜ NOT STARTED: Task not yet begun
+- 🔄 IN PROGRESS: Currently working on task  
+- ✅ COMPLETE: Task finished and validated
+- ❌ BLOCKED: Cannot proceed due to failed prerequisites
+
+## Progress Summary
+**Total Tasks**: [X]
+**Completed**: [Y] ✅
+**In Progress**: [Z] 🔄  
+**Remaining**: [A] ⬜
+**Blocked**: [B] ❌
 
 ## Risk Assessment
 [Technical risks and mitigation strategies]
@@ -138,5 +313,38 @@ Structure the plan as:
 - **TDD is mandatory** - tests come before implementation always
 - **Tasks must be crystal clear** - no room for interpretation
 - **Mark unclear tasks** - use "NEEDS CLARIFICATION" when task scope is ambiguous
+- **Prerequisite Validation Required** - Claude Code must verify prerequisites before starting tasks
+- **Progress Tracking Mandatory** - All task statuses must be updated as work progresses
+- **Checklist Format Required** - All tasks must be trackable with checkbox format
 
-Remember: This plan will be used by developers (human or AI) to implement the feature. Every task must be actionable and unambiguous.
+## Workflow Instructions for Claude Code:
+
+When implementing this plan, you MUST follow these rules:
+
+1. **Before Starting Any Task:**
+   - Check that ALL prerequisites are marked ✅ COMPLETE
+   - If prerequisites are not complete, mark task as ❌ BLOCKED
+   - Update task status to 🔄 IN PROGRESS before beginning work
+
+2. **During Task Execution:**
+   - Follow the exact task definition provided
+   - Perform the validation steps specified
+   - Do not deviate from the TDD cycle requirements
+
+3. **After Completing Task:**
+   - Verify all validation criteria are met
+   - Update task status to ✅ COMPLETE
+   - Update phase status if all phase tasks are complete
+   - Update progress summary counters
+
+4. **If Task Cannot Be Completed:**
+   - Mark status as ❌ BLOCKED
+   - Document the blocking issue
+   - Do not proceed to dependent tasks
+
+5. **Progress Updates Required:**
+   - Update the plan file after every task completion
+   - Maintain accurate progress summary
+   - Keep status indicators current
+
+Remember: This plan will be used by developers (human or AI) to implement the feature. Every task must be actionable and unambiguous, with clear progress tracking.
