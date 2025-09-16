@@ -205,20 +205,6 @@ def update(path, dry_run, source, no_backup):
                     click.echo("No configuration file found.")
                 source = click.prompt("Enter source repository")
 
-        # For dry-run, skip GitHub operations but still do backup logic
-        if not dry_run:
-            # Validate GitHub setup
-            click.echo("Checking GitHub CLI setup...")
-            setup_info = ensure_github_setup()
-            click.echo(
-                f"GitHub CLI v{setup_info['cli_version']} authenticated as {setup_info['user_info'].get('login', 'unknown')}"
-            )
-
-            # Validate source repository
-            click.echo(f"Validating source repository: {source}")
-            source_info = validate_repository_access(source)
-            click.echo(f"Source repository validated: {source_info['full_name']}")
-
         # Update target path
         click.echo(f"\nUpdating target path: {target_path}")
 
@@ -255,6 +241,18 @@ def update(path, dry_run, source, no_backup):
         if dry_run:
             click.echo(f"   [DRY RUN] Would update .claude folder in {target_path}")
             return
+
+        # Validate GitHub setup
+        click.echo("Checking GitHub CLI setup...")
+        setup_info = ensure_github_setup()
+        click.echo(
+            f"GitHub CLI v{setup_info['cli_version']} authenticated as {setup_info['user_info'].get('login', 'unknown')}"
+        )
+
+        # Validate source repository
+        click.echo(f"Validating source repository: {source}")
+        source_info = validate_repository_access(source)
+        click.echo(f"Source repository validated: {source_info['full_name']}")
 
         # Clone source repository to temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
