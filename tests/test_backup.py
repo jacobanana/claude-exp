@@ -49,10 +49,10 @@ class TestBackupManagerPrompting:
 
     def test_should_create_backup_method_exists(self):
         """BackupManager should have should_create_backup method."""
-        assert hasattr(self.backup_manager, 'should_create_backup')
-        assert callable(getattr(self.backup_manager, 'should_create_backup'))
+        assert hasattr(self.backup_manager, "should_create_backup")
+        assert callable(getattr(self.backup_manager, "should_create_backup"))
 
-    @patch('click.confirm')
+    @patch("click.confirm")
     def test_should_create_backup_prompts_user_with_correct_message(self, mock_confirm):
         """should_create_backup should prompt user with correct message and default."""
         mock_confirm.return_value = True
@@ -60,12 +60,11 @@ class TestBackupManagerPrompting:
         result = self.backup_manager.should_create_backup()
 
         mock_confirm.assert_called_once_with(
-            "Create backup of .claude folder before update?",
-            default=True
+            "Create backup of .claude folder before update?", default=True
         )
         assert result is True
 
-    @patch('click.confirm')
+    @patch("click.confirm")
     def test_should_create_backup_returns_user_choice(self, mock_confirm):
         """should_create_backup should return the user's choice."""
         mock_confirm.return_value = False
@@ -96,8 +95,8 @@ class TestBackupManagerFolderOperations:
 
     def test_create_claude_backup_method_exists(self):
         """BackupManager should have create_claude_backup method."""
-        assert hasattr(self.backup_manager, 'create_claude_backup')
-        assert callable(getattr(self.backup_manager, 'create_claude_backup'))
+        assert hasattr(self.backup_manager, "create_claude_backup")
+        assert callable(getattr(self.backup_manager, "create_claude_backup"))
 
     def test_create_claude_backup_creates_backup_folder_structure(self):
         """create_claude_backup should create .claude-backup directory structure."""
@@ -139,8 +138,12 @@ class TestBackupManagerFolderOperations:
         backup_path = result["backup_path"]
         assert (backup_path / ".claude" / "commands" / "test.md").exists()
         assert (backup_path / ".claude" / "settings.json").exists()
-        assert (backup_path / ".claude" / "commands" / "test.md").read_text() == "# Test Command"
-        assert (backup_path / ".claude" / "settings.json").read_text() == '{"test": true}'
+        assert (
+            backup_path / ".claude" / "commands" / "test.md"
+        ).read_text() == "# Test Command"
+        assert (
+            backup_path / ".claude" / "settings.json"
+        ).read_text() == '{"test": true}'
 
     def test_create_claude_backup_handles_missing_claude_folder(self):
         """create_claude_backup should handle case where .claude folder doesn't exist."""

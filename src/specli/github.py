@@ -67,7 +67,9 @@ def check_github_cli() -> Dict[str, any]:
         return {"installed": True, "version": version, "raw_output": version_output}
 
     except FileNotFoundError as e:
-        raise GitHubCLINotFoundError("GitHub CLI (gh) is not installed or not in PATH") from e
+        raise GitHubCLINotFoundError(
+            "GitHub CLI (gh) is not installed or not in PATH"
+        ) from e
     except subprocess.TimeoutExpired as e:
         raise GitHubCLINotFoundError("GitHub CLI check timed out") from e
 
@@ -223,7 +225,9 @@ def validate_repository_access(repo_url: str) -> Dict[str, any]:
     except ValueError as e:
         raise GitHubRepositoryError(str(e)) from e
     except subprocess.TimeoutExpired as e:
-        raise GitHubRepositoryError(f"Repository validation timed out for {repo_url}") from e
+        raise GitHubRepositoryError(
+            f"Repository validation timed out for {repo_url}"
+        ) from e
 
 
 def clone_repository(
@@ -280,7 +284,9 @@ def clone_repository(
     except ValueError as e:
         raise GitHubRepositoryError(str(e)) from e
     except subprocess.TimeoutExpired as e:
-        raise GitHubRepositoryError(f"Repository cloning timed out for {repo_url}") from e
+        raise GitHubRepositoryError(
+            f"Repository cloning timed out for {repo_url}"
+        ) from e
 
 
 def list_repository_contents(repo_url: str, path: str = "") -> List[Dict[str, any]]:

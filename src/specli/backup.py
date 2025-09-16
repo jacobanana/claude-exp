@@ -11,6 +11,8 @@ during update operations. It handles:
 from pathlib import Path
 from typing import Dict, Any
 import click
+import shutil
+import time
 
 
 class BackupManager:
@@ -46,8 +48,7 @@ class BackupManager:
             return False
 
         return click.confirm(
-            "Create backup of .claude folder before update?",
-            default=True
+            "Create backup of .claude folder before update?", default=True
         )
 
     def create_claude_backup(self) -> Dict[str, Any]:
@@ -63,14 +64,29 @@ class BackupManager:
         claude_folder = self.target_path / ".claude"
 
         if not claude_folder.exists():
-            return {
-                "success": False,
-                "error": ".claude folder does not exist"
-            }
+            return {"success": False, "error": ".claude folder does not exist"}
 
-        # For minimal implementation, just return success structure
-        # Actual backup logic will be implemented in Phase 2
-        return {
-            "success": True,
-            "backup_path": self.target_path / ".claude-backup" / "placeholder"
-        }
+        try:
+            # Create .claude-backup directory if it doesn't exist
+            backup_root = self.target_path / ".claude-backup"
+            backup_root.mkdir(exist_ok=True)
+
+            # Generate unique timestamp-based backup name
+            timestamp = int(time.time())
+            backup_name = f"{timestamp}"
+            backup_path = backup_root / backup_name
+
+            # Ensure backup name is unique
+            counter = 1
+            while backup_path.exists():
+                backup_name = f"{timestamp}_{counter}"
+                backup_path = backup_root / backup_name
+                counter += 1
+
+            # Copy .claude folder to backup location
+            shutil.copytree(claude_folder, backup_path / ".claude")
+
+            return {"success": True, "backup_path": backup_path}
+
+        except Exception as e:
+            return {"success": False, "error": f"Backup failed: {str(e)}"}
