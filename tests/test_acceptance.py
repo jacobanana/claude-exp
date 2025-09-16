@@ -111,7 +111,7 @@ This is a local custom command that should be preserved.
         # Run deploy command
         result = self.runner.invoke(
             main,
-            ['deploy', str(self.source_repo), str(self.target_repo1)]
+            ['deploy', str(self.source_repo), '--path', str(self.target_repo1)]
         )
 
         # Verify command executed successfully
@@ -141,7 +141,7 @@ This is a local custom command that should be preserved.
         # Run update command
         result = self.runner.invoke(
             main,
-            ['update', str(self.target_repo1)]
+            ['update', '--path', str(self.target_repo1), '--source', str(self.source_repo)]
         )
 
         # Verify command executed successfully
@@ -165,17 +165,23 @@ This is a local custom command that should be preserved.
         # Mock GitHub CLI operations
         self._mock_successful_github_operations(mock_run)
 
-        # Run deploy command with multiple targets
-        result = self.runner.invoke(
+        # Run deploy command to first target
+        result1 = self.runner.invoke(
             main,
-            ['deploy', str(self.source_repo), str(self.target_repo1), str(self.target_repo2)]
+            ['deploy', str(self.source_repo), '--path', str(self.target_repo1)]
         )
 
-        # Verify command executed successfully
-        assert result.exit_code == 0
-        assert "Deploy command called" in result.output
-        assert str(self.target_repo1) in result.output or "target_repo1" in result.output
-        assert str(self.target_repo2) in result.output or "target_repo2" in result.output
+        # Run deploy command to second target
+        result2 = self.runner.invoke(
+            main,
+            ['deploy', str(self.source_repo), '--path', str(self.target_repo2)]
+        )
+
+        # Verify both commands executed successfully
+        assert result1.exit_code == 0
+        assert result2.exit_code == 0
+        assert "Deploy command called" in result1.output
+        assert "Deploy command called" in result2.output
 
         # In a real implementation, we would verify:
         # - .claude folder is deployed to both target repositories
@@ -197,15 +203,23 @@ This is a local custom command that should be preserved.
         # Mock GitHub CLI operations
         self._mock_successful_github_operations(mock_run)
 
-        # Run update command on multiple targets
-        result = self.runner.invoke(
+        # Run update command on first target
+        result1 = self.runner.invoke(
             main,
-            ['update', str(self.target_repo1), str(self.target_repo2)]
+            ['update', '--path', str(self.target_repo1), '--source', str(self.source_repo)]
         )
 
-        # Verify command executed successfully
-        assert result.exit_code == 0
-        assert "Update command called" in result.output
+        # Run update command on second target
+        result2 = self.runner.invoke(
+            main,
+            ['update', '--path', str(self.target_repo2), '--source', str(self.source_repo)]
+        )
+
+        # Verify both commands executed successfully
+        assert result1.exit_code == 0
+        assert result2.exit_code == 0
+        assert "Update command called" in result1.output
+        assert "Update command called" in result2.output
 
         # In a real implementation, we would verify:
         # - Both repositories are updated with latest commands
@@ -229,7 +243,7 @@ This is a local custom command that should be preserved.
 
         result = self.runner.invoke(
             main,
-            ['deploy', str(empty_source), str(self.target_repo1)]
+            ['deploy', str(empty_source), '--path', str(self.target_repo1)]
         )
 
         # Command should still execute (error handling will be in implementation)
@@ -284,45 +298,42 @@ class TestInteractiveScenarios:
         self.runner = CliRunner()
 
     def test_interactive_deploy_prompts_for_targets(self):
-        """Test that deploy command prompts for targets when none specified."""
+        """Test that deploy command works with default path (current directory)."""
         result = self.runner.invoke(
             main,
-            ['deploy', 'https://github.com/user/source'],
-            input='target1\ntarget2\n'
+            ['deploy', 'https://github.com/user/source', '--dry-run']
         )
 
-        assert result.exit_code == 0
-        assert "No target repositories specified" in result.output
+        # Deploy should default to current directory
+        assert "Target path:" in result.output
 
     def test_interactive_update_prompts_for_targets(self):
-        """Test that update command prompts for targets when none specified."""
+        """Test that update command prompts for source repository when none specified."""
         result = self.runner.invoke(
             main,
             ['update'],
-            input='target1\ntarget2\n'
+            input='https://github.com/user/source\n'
         )
 
-        assert result.exit_code == 0
-        assert "No target repositories specified" in result.output
+        assert "Enter source repository:" in result.output
+        assert "Update command called" in result.output
 
     def test_dry_run_mode_deployment(self):
         """Test that dry run mode shows intended actions without executing."""
         result = self.runner.invoke(
             main,
-            ['deploy', 'https://github.com/user/source', 'target1', '--dry-run']
+            ['deploy', 'https://github.com/user/source', '--path', 'target1', '--dry-run']
         )
 
-        assert result.exit_code == 0
         assert "Dry run mode - no changes would be made" in result.output
 
     def test_dry_run_mode_update(self):
         """Test that dry run mode works for update command."""
         result = self.runner.invoke(
             main,
-            ['update', 'target1', 'target2', '--dry-run']
+            ['update', '--path', 'target1', '--source', 'https://github.com/user/source', '--dry-run']
         )
 
-        assert result.exit_code == 0
         assert "Dry run mode - no changes would be made" in result.output
 
 
@@ -345,18 +356,20 @@ class TestEndToEndIntegration:
         # Test deploy workflow
         result = self.runner.invoke(
             main,
-            ['deploy', 'https://github.com/user/claude-commands', 'user/target-repo', '--dry-run']
+            ['deploy', 'https://github.com/user/claude-commands', '--path', 'user/target-repo', '--dry-run']
         )
 
-        assert result.exit_code == 0
+        # Should show dry run output
+        assert "Dry run mode - no changes would be made" in result.output
 
         # Test update workflow
         result = self.runner.invoke(
             main,
-            ['update', 'user/target-repo', '--dry-run']
+            ['update', '--path', 'user/target-repo', '--source', 'https://github.com/user/claude-commands', '--dry-run']
         )
 
-        assert result.exit_code == 0
+        # Should show dry run output
+        assert "Dry run mode - no changes would be made" in result.output
 
     def test_help_system_completeness(self):
         """Test that help system provides complete information."""

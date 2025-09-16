@@ -140,19 +140,19 @@ A lightweight Python CLI tool (`specli`) that deploys and synchronizes Claude Co
   - **Expected Result**: All CLI tests pass, commands execute and show proper help
   - **Validation**: All 17 CLI tests pass, CLI properly integrates with filesystem and github modules
 
-- [ ] **IMPL-003**: Implement path-based deployment support
-  - **Status**: ⬜ NOT STARTED
+- [x] **IMPL-003**: Implement path-based deployment support
+  - **Status**: ✅ COMPLETE
   - **Prerequisites**: IMPL-002 ✅ COMPLETE
   - **Covers**: FR-006 - Path specification for deployment target, defaulting to current directory
   - **Expected Result**: Tool accepts --path option, defaults to current working directory
-  - **Validation**: Path-based deployment tests pass
+  - **Validation**: Path-based deployment tests pass (3 of 3 passing)
 
-- [ ] **IMPL-004**: Implement update vs deploy logic
-  - **Status**: ⬜ NOT STARTED
+- [x] **IMPL-004**: Implement update vs deploy logic
+  - **Status**: ✅ COMPLETE
   - **Prerequisites**: IMPL-001 ✅ COMPLETE, IMPL-002 ✅ COMPLETE
   - **Covers**: FR-003 - Logic to detect existing .claude folders, merge/update strategy vs fresh copy
   - **Expected Result**: Tool correctly updates existing commands, preserves custom configurations
-  - **Validation**: Update logic tests pass
+  - **Validation**: Update logic tests pass (4 of 4 filesystem update tests passing)
 
 #### TDD Cycle 2D: Integration ⬜ NOT STARTED
 **Status**: ⬜ NOT STARTED
@@ -204,33 +204,34 @@ A lightweight Python CLI tool (`specli`) that deploys and synchronizes Claude Co
 
 ## Progress Summary
 **Total Tasks**: 16
-**Completed**: 10 ✅
+**Completed**: 12 ✅
 **In Progress**: 0 🔄
-**Remaining**: 6 ⬜
+**Remaining**: 4 ⬜
 **Blocked**: 0 ❌
 
 ## Current Status Assessment
-**Test Results**: 71 passed, 0 failed (100% pass rate)
-**Code Coverage**: 35% overall
+**Test Results**: 71 passed, 0 failed (100% pass rate) ✅
+**Code Coverage**: 33% overall
 - Filesystem module: 11% (full implementation)
-- GitHub module: 50% (full implementation)
+- GitHub module: 46% (full implementation)
 - Main CLI module: 43% (full implementation)
 
 **Completed Work**:
 - ✅ Complete project setup and scaffolding
-- ✅ Comprehensive test suite (71 tests)
+- ✅ Comprehensive test suite (71 tests, 100% passing)
 - ✅ File system operations fully implemented
 - ✅ GitHub CLI integration fully implemented
 - ✅ CLI command structure with filesystem/github integration
+- ✅ Acceptance tests updated for new path-based interface
 
 **Remaining Work**:
 - ✅ CLI integration with filesystem/github modules
-- ❌ Path-based deployment support
-- ❌ Update vs deploy logic implementation
+- ✅ Path-based deployment support
+- ✅ Update vs deploy logic implementation
 - ❌ End-to-end workflow integration
 - ❌ Error handling and UX polish
 
-**Next Steps**: IMPL-002 complete! Now focus on IMPL-003 (path-based deployment) and IMPL-004 (update vs deploy logic) to enable full end-to-end functionality.
+**Next Steps**: IMPL-004 complete! Now focus on IMPL-006 (end-to-end workflow integration) and error handling/UX polish to enable full functionality.
 
 ## Risk Assessment
 
