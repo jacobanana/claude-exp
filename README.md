@@ -23,7 +23,7 @@ pipx install git+ssh://git@github.com/jacobanana/claude-exp.git
 If a new version of the tools is available, update it with:
 
 ```bash
-pipx update specli
+pipx upgrade specli
 ```
 
 ## Usage
