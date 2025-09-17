@@ -24,7 +24,7 @@ Before planning, verify:
 - [ ] All acceptance scenarios are complete
 - [ ] Technical approach is provided in the input
 
-If validation fails, stop and request clarification.
+**IMPORTANT: If validation fails, stop and request clarification.**
 
 ## Technical Analysis Framework:
 
