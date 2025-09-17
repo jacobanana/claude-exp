@@ -10,9 +10,10 @@ This module handles:
 """
 
 import shutil
-import time
 from pathlib import Path
 from typing import Dict, Optional
+
+from .backup import BackupManager
 
 
 class ClaudeFolderNotFoundError(Exception):
@@ -104,34 +105,6 @@ def get_claude_folder_info(claude_path: Path) -> Dict[str, any]:
     return info
 
 
-def create_backup(claude_path: Path) -> Path:
-    """
-    Create a backup of existing .claude folder.
-
-    Args:
-        claude_path: Path to .claude folder to backup
-
-    Returns:
-        Path to backup folder
-    """
-    if not claude_path.exists():
-        raise ValueError(f"Cannot backup non-existent folder: {claude_path}")
-
-    timestamp = int(time.time())
-    backup_name = f".claude.backup.{timestamp}"
-    backup_path = claude_path.parent / backup_name
-
-    # Ensure backup name is unique
-    counter = 1
-    while backup_path.exists():
-        backup_name = f".claude.backup.{timestamp}.{counter}"
-        backup_path = claude_path.parent / backup_name
-        counter += 1
-
-    shutil.copytree(claude_path, backup_path)
-    return backup_path
-
-
 def copy_claude_folder(
     source_path: Path, target_repo: Path, create_backup_if_exists: bool = True
 ) -> Dict[str, any]:
@@ -168,10 +141,15 @@ def copy_claude_folder(
     try:
         # Create backup if target exists
         if target_claude.exists() and create_backup_if_exists:
-            backup_path = create_backup(target_claude)
-            result["backup_created"] = True
-            result["backup_path"] = backup_path
-            shutil.rmtree(target_claude)
+            backup_manager = BackupManager(target_repo)
+            backup_result = backup_manager.create_claude_backup()
+
+            if backup_result["success"]:
+                result["backup_created"] = True
+                result["backup_path"] = backup_result["backup_path"]
+                shutil.rmtree(target_claude)
+            else:
+                raise RuntimeError(f"Backup failed: {backup_result['error']}")
 
         # Copy source to target
         shutil.copytree(source_path, target_claude)
