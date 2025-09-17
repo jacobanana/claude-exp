@@ -17,6 +17,7 @@ from unittest.mock import Mock, patch
 from click.testing import CliRunner
 
 from specli.main import main
+from specli import __version__
 
 
 class TestAcceptanceScenarios:
@@ -439,4 +440,4 @@ class TestEndToEndIntegration:
         """Test version information is available and correct."""
         result = self.runner.invoke(main, ["--version"])
         assert result.exit_code == 0
-        assert "0.1.0" in result.output
+        assert __version__ in result.output

@@ -11,6 +11,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from specli.main import deploy, main, update
+from specli import __version__
 
 
 class TestMainCLI:
@@ -37,7 +38,7 @@ class TestMainCLI:
         result = self.runner.invoke(main, ["--version"])
 
         assert result.exit_code == 0
-        assert "version 0.1.0" in result.output
+        assert f"version {__version__}" in result.output
 
     def test_main_no_command(self):
         """Test main CLI with no command shows help."""
