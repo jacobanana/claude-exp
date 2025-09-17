@@ -10,7 +10,6 @@ This module handles:
 """
 
 import shutil
-import time
 from pathlib import Path
 from typing import Dict, Optional
 
