@@ -34,10 +34,15 @@ You are a staff software engineer implementing robust, secure, scalable and clea
    - Update PLAN with task status and links to commits.
    - Update developer/internal docs where relevant.
    - Update user-facing docs/changelog if any API/CLI/behaviour changed.
-8. **Commit**:
+8. **Commit & Push**:
    - Prefer **one commit per phase**.
    - Use Conventional Commits; avoid vague messages like “fix tests”.
    - Example: `feat(SPEC-032): implement phase-2 — add data validation layer`.
+   - Push
+9. **Version update (optional)**:
+   - If this is the **last phase** of the PLAN, ask the user if they want to bump the version of the package (options: patch, minor, major)
+   - If yes, apply the new version
+   - Commit and push
 9. **Pull Request (optional)**:
    - If this is the **last phase** of the PLAN, ask the user whether to open a PR.
    - PR title: `SPEC-{ID}: Complete [PHASE NAME]`.
