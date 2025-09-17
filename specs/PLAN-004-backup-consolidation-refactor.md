@@ -11,7 +11,7 @@
 
 ### Implementation Progress
 - [x] **Phase 0**: Environment & Setup ✅ Complete
-- [ ] **Phase 1**: Baseline Validation
+- [x] **Phase 1**: Baseline Validation ✅ Complete
 - [ ] **Phase 2**: Refactor Implementation (Validation Cycles)
 - [ ] **Phase 3**: Integration Validation
 - [ ] **Phase 4**: Acceptance Validation
@@ -84,20 +84,58 @@
 ### Phase 1: Baseline Validation
 **Dependencies**: Phase 0 complete
 
-- **VAL-BASE-001**: Run full existing test suite
+- **VAL-BASE-001**: Run full existing test suite ✅ COMPLETE
   - **Command**: `uv run pytest`
   - **Expected Result**: All tests pass unchanged
+  - **Actual Result**: 126 passed, 1 skipped - SUCCESS
   - **Covers**: FR-006 baseline
 
-- **VAL-BASE-002**: Capture baseline metrics
+- **VAL-BASE-002**: Capture baseline metrics ✅ COMPLETE
   - **Metrics**: Test coverage %, code complexity, duplicate code detection
   - **Tools**: `pytest --cov`, complexity analysis
   - **Expected Result**: Baseline measurements for comparison
+  - **Actual Results**:
+    - **Total Coverage**: 45% (576 statements, 314 missing)
+    - **File Coverage**: backup.py 100%, filesystem.py 16%, main.py 51%
+    - **Code Quality**: 22 ruff errors (17 fixable, mostly imports/unused vars)
+    - **Duplicate Code**: 2 backup implementations identified
 
-- **VAL-BASE-003**: Document current backup behavior differences
+- **VAL-BASE-003**: Document current backup behavior differences ✅ COMPLETE
   - **Analysis**: Compare `create_backup()` vs `BackupManager.create_claude_backup()`
   - **Expected Result**: Clear understanding of behavior changes needed
   - **Covers**: FR-005 preparation
+
+#### Backup Implementation Analysis (VAL-BASE-003)
+
+**Current Implementations:**
+
+**1. `filesystem.py:create_backup()` (Lines 107-132)**
+- **Storage**: Creates `.claude.backup.{timestamp}` in same directory as source
+- **Interface**: `create_backup(claude_path: Path) -> Path`
+- **Error Handling**: Raises `ValueError` for missing folders
+- **Uniqueness**: Appends counter if timestamp collision (`.claude.backup.{timestamp}.{counter}`)
+- **Usage**: Called from `copy_claude_folder()` at filesystem.py:171
+- **Return**: Direct Path to backup folder
+
+**2. `backup.py:BackupManager.create_claude_backup()` (Lines 54-92)**
+- **Storage**: Creates `.claude-backup/{timestamp}/.claude` in structured directory
+- **Interface**: `create_claude_backup() -> Dict[str, Any]`
+- **Error Handling**: Returns dict with success/error fields, never raises
+- **Uniqueness**: Appends counter if timestamp collision (`{timestamp}_{counter}`)
+- **Usage**: Called from `main.py:update` command (lines 220-221)
+- **Return**: Dict with `{"success": bool, "backup_path": Path, "error": str}`
+
+**Key Differences for Refactor:**
+1. **Storage Location**: `.claude.backup.{timestamp}` → `.claude-backup/{timestamp}/.claude`
+2. **Return Type**: `Path` → `Dict[str, Any]`
+3. **Error Model**: Exception → Result dict
+4. **Directory Structure**: Flat backup → Nested backup with version folders
+5. **User Interaction**: Silent → Can prompt via `should_create_backup()`
+
+**Integration Points:**
+- `filesystem.py:171` needs to adapt from `Path` return to `Dict` return
+- `copy_claude_folder()` result dict needs `backup_path` updated to new location
+- Tests expecting `.claude.backup.*` naming need validation
 
 ### Phase 2: Refactor Implementation (Validation Cycles)
 
