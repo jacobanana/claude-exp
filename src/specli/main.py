@@ -4,27 +4,12 @@ specli - Claude Command Deployer
 A CLI tool for deploying and synchronizing .claude commands across repositories.
 """
 
-import tempfile
 from pathlib import Path
 
 import click
 
 from . import __version__
-from .backup import BackupManager
-from .config import load_config, save_config
-from .filesystem import (
-    ClaudeFolderCorruptedError,
-    ClaudeFolderNotFoundError,
-    copy_claude_folder,
-    detect_claude_folder,
-    merge_claude_folders,
-)
-from .github import (
-    GitHubCLIError,
-    clone_repository,
-    ensure_github_setup,
-    validate_repository_access,
-)
+from .config import load_config
 from .operations import deploy_operation, update_operation
 
 
