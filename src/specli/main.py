@@ -210,11 +210,9 @@ def update(path, dry_run, source, no_backup):
         click.echo(f"\nUpdating target path: {target_path}")
 
         # Handle backup before update (if .claude folder exists)
-        backup_needed = False
         try:
             target_claude = detect_claude_folder(target_path)
             click.echo("Found existing .claude folder in target")
-            backup_needed = True
 
             # Create backup manager and handle backup
             backup_manager = BackupManager(target_path)

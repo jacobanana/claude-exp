@@ -8,11 +8,10 @@ Tests the backup protection system that:
 - Ensures backup completion before allowing updates
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch
-import tempfile
 import shutil
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 
 from specli.backup import BackupManager
 
@@ -50,7 +49,7 @@ class TestBackupManagerPrompting:
     def test_should_create_backup_method_exists(self):
         """BackupManager should have should_create_backup method."""
         assert hasattr(self.backup_manager, "should_create_backup")
-        assert callable(getattr(self.backup_manager, "should_create_backup"))
+        assert callable(self.backup_manager.should_create_backup)
 
     @patch("click.confirm")
     def test_should_create_backup_prompts_user_with_correct_message(self, mock_confirm):
@@ -96,7 +95,7 @@ class TestBackupManagerFolderOperations:
     def test_create_claude_backup_method_exists(self):
         """BackupManager should have create_claude_backup method."""
         assert hasattr(self.backup_manager, "create_claude_backup")
-        assert callable(getattr(self.backup_manager, "create_claude_backup"))
+        assert callable(self.backup_manager.create_claude_backup)
 
     def test_create_claude_backup_creates_backup_folder_structure(self):
         """create_claude_backup should create .claude-backup directory structure."""

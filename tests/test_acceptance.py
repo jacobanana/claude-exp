@@ -16,8 +16,8 @@ from unittest.mock import Mock, patch
 
 from click.testing import CliRunner
 
-from specli.main import main
 from specli import __version__
+from specli.main import main
 
 
 class TestAcceptanceScenarios:

@@ -5,11 +5,10 @@ These tests validate the exact acceptance scenarios defined in the specification
 """
 
 import json
-import tempfile
-import shutil
 from pathlib import Path
 
 from click.testing import CliRunner
+
 from specli.main import update
 
 
@@ -88,7 +87,10 @@ class TestBackupAcceptanceScenarios:
             assert result.exit_code == 0
 
             # Verify it proceeds without backup
-            assert "Skipping backup as requested" in result.output or "[DRY RUN] Would update" in result.output
+            assert (
+                "Skipping backup as requested" in result.output
+                or "[DRY RUN] Would update" in result.output
+            )
 
     def test_acceptance_scenario_3_backup_creation(self):
         """
@@ -102,7 +104,7 @@ class TestBackupAcceptanceScenarios:
 
             # Run update command and confirm backup (no dry-run to actually create backup)
             # Note: This will fail at GitHub operations, but backup should be created first
-            result = self.runner.invoke(update, [], input="y\n", catch_exceptions=True)
+            _ = self.runner.invoke(update, [], input="y\n", catch_exceptions=True)
 
             # Verify backup folder structure was created
             backup_root = target_path / ".claude-backup"
@@ -112,7 +114,9 @@ class TestBackupAcceptanceScenarios:
             assert len(backup_folders) >= 1, "At least one backup folder should exist"
 
             # Verify backup contains complete copy of .claude folder
-            backup_folder = backup_folders[0]  # Get the first (and should be only) backup
+            backup_folder = backup_folders[
+                0
+            ]  # Get the first (and should be only) backup
             backed_up_claude = backup_folder / ".claude"
             assert backed_up_claude.exists(), "Backup should contain .claude folder"
 
@@ -120,7 +124,9 @@ class TestBackupAcceptanceScenarios:
             assert (backed_up_claude / "test.txt").exists()
             assert (backed_up_claude / "test.txt").read_text() == "original content"
             assert (backed_up_claude / "commands" / "test.md").exists()
-            assert (backed_up_claude / "commands" / "test.md").read_text() == "# Test Command"
+            assert (
+                backed_up_claude / "commands" / "test.md"
+            ).read_text() == "# Test Command"
 
     def test_acceptance_scenario_4_backup_failure_handling(self):
         """
@@ -140,10 +146,16 @@ class TestBackupAcceptanceScenarios:
             result = self.runner.invoke(update, [], input="y\n", catch_exceptions=True)
 
             # Verify backup failure is reported
-            assert "ERROR: Backup failed:" in result.output or "Backup failed:" in result.output
+            assert (
+                "ERROR: Backup failed:" in result.output
+                or "Backup failed:" in result.output
+            )
 
             # Verify update operation is cancelled
-            assert "Update operation cancelled" in result.output or "cancelled to protect your data" in result.output
+            assert (
+                "Update operation cancelled" in result.output
+                or "cancelled to protect your data" in result.output
+            )
 
             # Verify command doesn't continue to GitHub operations
             assert "Cloning source repository" not in result.output
@@ -160,6 +172,7 @@ class TestBackupAcceptanceScenarios:
 
             # Create first backup manually
             from specli.backup import BackupManager
+
             backup_manager = BackupManager(target_path)
 
             first_backup = backup_manager.create_claude_backup()
@@ -171,7 +184,7 @@ class TestBackupAcceptanceScenarios:
             (claude_folder / "new_file.txt").write_text("new content")
 
             # Create second backup via CLI
-            result = self.runner.invoke(update, [], input="y\n", catch_exceptions=True)
+            _ = self.runner.invoke(update, [], input="y\n", catch_exceptions=True)
 
             # Verify both backups exist
             backup_root = target_path / ".claude-backup"
@@ -180,14 +193,20 @@ class TestBackupAcceptanceScenarios:
 
             # Verify backups have unique timestamps
             backup_names = [folder.name for folder in backup_folders]
-            assert len(set(backup_names)) == len(backup_names), "All backup folder names should be unique"
+            assert len(set(backup_names)) == len(
+                backup_names
+            ), "All backup folder names should be unique"
 
             # Verify first backup is untouched
             assert first_backup_path.exists(), "First backup should still exist"
-            assert (first_backup_path / ".claude" / "test.txt").exists(), "First backup content should be preserved"
+            assert (
+                first_backup_path / ".claude" / "test.txt"
+            ).exists(), "First backup content should be preserved"
 
             # Verify first backup doesn't contain the new file (proving it's untouched)
-            assert not (first_backup_path / ".claude" / "new_file.txt").exists(), "First backup should not contain new content"
+            assert not (
+                first_backup_path / ".claude" / "new_file.txt"
+            ).exists(), "First backup should not contain new content"
 
     def test_backup_prompt_exact_format(self):
         """Test that the prompt matches the exact format specified in acceptance criteria."""
@@ -201,8 +220,13 @@ class TestBackupAcceptanceScenarios:
             assert "Create backup of .claude folder before update?" in result.output
 
             # The prompt should indicate Y is default (either [Y/n] or similar)
-            output_lines = result.output.split('\n')
-            prompt_line = next((line for line in output_lines if "Create backup" in line), "")
+            output_lines = result.output.split("\n")
+            prompt_line = next(
+                (line for line in output_lines if "Create backup" in line), ""
+            )
 
             # Should indicate Y is default in some way
-            assert any(indicator in prompt_line for indicator in ["[Y/n]", "(Y/n)", "[y/N]", "(Y/n)"]), f"Prompt should show Y as default. Found: {prompt_line}"
+            assert any(
+                indicator in prompt_line
+                for indicator in ["[Y/n]", "(Y/n)", "[y/N]", "(Y/n)"]
+            ), f"Prompt should show Y as default. Found: {prompt_line}"
