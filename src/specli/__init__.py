@@ -4,8 +4,9 @@ specli - Claude Command Deployer
 A CLI tool for deploying and synchronizing .claude commands across repositories.
 """
 
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 DEFAULT_VERSION = "unknown"
 

@@ -8,11 +8,12 @@ during update operations. It handles:
 - Safety checks to ensure backups complete before updates
 """
 
-from pathlib import Path
-from typing import Dict, Any
-import click
 import shutil
 import time
+from pathlib import Path
+from typing import Any, Dict
+
+import click
 
 
 class BackupManager:

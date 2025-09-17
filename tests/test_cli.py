@@ -10,8 +10,8 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from specli.main import deploy, main, update
 from specli import __version__
+from specli.main import deploy, main, update
 
 
 class TestMainCLI:
@@ -297,11 +297,11 @@ class TestBackupIntegration:
     def test_update_command_accepts_no_backup_flag(self):
         """Test that update command accepts --no-backup flag."""
         with self.runner.isolated_filesystem():
-            from specli.main import update
-
             # Create a config file to avoid prompting
             import json
             from pathlib import Path
+
+            from specli.main import update
 
             target_path = Path(".").resolve()
             config_file = target_path / "specli.settings.json"
@@ -314,9 +314,7 @@ class TestBackupIntegration:
                 json.dump(config_data, f, indent=2)
 
             # Run update command with --no-backup flag
-            result = self.runner.invoke(
-                update, ["--no-backup", "--dry-run"]
-            )
+            result = self.runner.invoke(update, ["--no-backup", "--dry-run"])
 
             # Should run without prompting
             assert result.exit_code == 0
@@ -325,11 +323,11 @@ class TestBackupIntegration:
     def test_update_prompts_for_backup_by_default(self):
         """Test that update command prompts for backup when no flag is provided."""
         with self.runner.isolated_filesystem():
-            from specli.main import update
-
             # Create a config file to avoid source prompting
             import json
             from pathlib import Path
+
+            from specli.main import update
 
             target_path = Path(".").resolve()
             config_file = target_path / "specli.settings.json"
@@ -348,9 +346,7 @@ class TestBackupIntegration:
 
             # Run update command without --no-backup flag
             # Simulate user pressing Enter (default Yes)
-            result = self.runner.invoke(
-                update, ["--dry-run"], input="\n"
-            )
+            result = self.runner.invoke(update, ["--dry-run"], input="\n")
 
             # Should prompt for backup (if backup logic is integrated)
             # This will fail initially until backup is integrated
@@ -359,9 +355,10 @@ class TestBackupIntegration:
     def test_update_creates_backup_when_confirmed(self):
         """Test that update creates backup when user confirms."""
         with self.runner.isolated_filesystem():
-            from specli.main import update
             import json
             from pathlib import Path
+
+            from specli.main import update
 
             target_path = Path(".").resolve()
 
@@ -381,9 +378,7 @@ class TestBackupIntegration:
             (claude_folder / "test.txt").write_text("original content")
 
             # Run update command and confirm backup
-            result = self.runner.invoke(
-                update, ["--dry-run"], input="y\n"
-            )
+            _ = self.runner.invoke(update, ["--dry-run"], input="y\n")
 
             # Check that backup folder was created
             backup_root = target_path / ".claude-backup"
@@ -398,9 +393,10 @@ class TestBackupIntegration:
     def test_update_skips_backup_with_no_backup_flag(self):
         """Test that update skips backup creation when --no-backup is used."""
         with self.runner.isolated_filesystem():
-            from specli.main import update
             import json
             from pathlib import Path
+
+            from specli.main import update
 
             target_path = Path(".").resolve()
 
@@ -420,9 +416,7 @@ class TestBackupIntegration:
             (claude_folder / "test.txt").write_text("content")
 
             # Run update command with --no-backup
-            result = self.runner.invoke(
-                update, ["--no-backup", "--dry-run"]
-            )
+            _ = self.runner.invoke(update, ["--no-backup", "--dry-run"])
 
             # Should not create backup folder
             backup_root = target_path / ".claude-backup"
@@ -436,4 +430,6 @@ class TestBackupIntegration:
 
         assert result.exit_code == 0
         assert "--no-backup" in result.output
-        assert "Skip backup prompt" in result.output or "backup" in result.output.lower()
+        assert (
+            "Skip backup prompt" in result.output or "backup" in result.output.lower()
+        )

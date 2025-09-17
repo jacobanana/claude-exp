@@ -4,26 +4,30 @@ specli - Claude Command Deployer
 A CLI tool for deploying and synchronizing .claude commands across repositories.
 """
 
-import tempfile
 from pathlib import Path
 
 import click
 
 from . import __version__
 from .backup import BackupManager
-from .config import load_config, save_config
-from .filesystem import (
-    ClaudeFolderCorruptedError,
-    ClaudeFolderNotFoundError,
-    copy_claude_folder,
-    detect_claude_folder,
-    merge_claude_folders,
+from .config import load_config
+from .filesystem import ClaudeFolderNotFoundError, detect_claude_folder
+from .github import GitHubCLIError
+from .operations import deploy_claude_commands, update_claude_commands
+from .output import (
+    format_config_message,
+    format_dry_run_config_message,
+    format_dry_run_message,
+    format_error_message,
+    format_github_setup_message,
+    format_operation_details,
+    format_repository_validation_message,
+    format_success_message,
 )
-from .github import (
-    GitHubCLIError,
-    clone_repository,
-    ensure_github_setup,
-    validate_repository_access,
+from .validation import (
+    validate_github_setup,
+    validate_source_repository,
+    validate_target_path,
 )
 
 
@@ -56,105 +60,69 @@ def deploy(source_repo, path, dry_run):
 
         if dry_run:
             click.echo("Dry run mode - no changes would be made")
-            # Save configuration file even for dry-run to show what would be created
-            config_result = save_config(source_repo, target_path)
-            if config_result["success"]:
+            click.echo(format_dry_run_message("deploy", str(target_path)))
+
+            # Execute dry run through operations layer
+            deploy_result = deploy_claude_commands(source_repo, target_path, dry_run)
+            if deploy_result["success"]:
+                details = deploy_result["details"]
                 click.echo(
-                    f"   [DRY RUN] Configuration file created: {config_result['config_file'].name}"
+                    format_dry_run_config_message(
+                        details["config_created"], details.get("config_file")
+                    )
                 )
             else:
-                click.echo(
-                    f"   [DRY RUN] Configuration file creation would fail: {config_result['error']}"
-                )
+                click.echo(format_dry_run_config_message(False))
             return
 
         # Validate GitHub setup
         click.echo("Checking GitHub CLI setup...")
-        setup_info = ensure_github_setup()
-        click.echo(
-            f"GitHub CLI v{setup_info['cli_version']} authenticated as {setup_info['user_info'].get('login', 'unknown')}"
-        )
+        github_validation = validate_github_setup()
+        if not github_validation["success"]:
+            click.echo(format_error_message(github_validation["message"]))
+            click.echo("Try running: gh auth login")
+            return
+        click.echo(format_github_setup_message(github_validation["setup_info"]))
 
         # Validate source repository
         click.echo(f"Validating source repository: {source_repo}")
-        source_info = validate_repository_access(source_repo)
-        click.echo(f"Source repository validated: {source_info['full_name']}")
+        repo_validation = validate_source_repository(source_repo)
+        if not repo_validation["success"]:
+            click.echo(format_error_message(repo_validation["message"]))
+            return
+        click.echo(format_repository_validation_message(repo_validation["repo_info"]))
 
-        # Clone source repository to temporary directory
-        with tempfile.TemporaryDirectory() as temp_dir:
-            click.echo("Cloning source repository...")
-            clone_result = clone_repository(source_repo, Path(temp_dir))
-            source_repo_path = clone_result["repository_path"]
+        # Perform deployment operation
+        click.echo("Cloning source repository...")
+        click.echo(f"\nDeploying to target path: {target_path}")
 
-            # Detect .claude folder in source
-            try:
-                source_claude = detect_claude_folder(source_repo_path)
-                click.echo("Found .claude folder in source repository")
-            except ClaudeFolderNotFoundError:
-                click.echo(
-                    f"ERROR: No .claude folder found in source repository: {source_repo}"
-                )
-                return
-            except ClaudeFolderCorruptedError as e:
-                click.echo(f"ERROR: Corrupted .claude folder in source: {e}")
-                return
+        # Execute deployment business logic
+        deploy_result = deploy_claude_commands(source_repo, target_path, dry_run)
 
-            # Deploy to target path
-            click.echo(f"\nDeploying to target path: {target_path}")
+        if deploy_result["success"]:
+            click.echo("Found .claude folder in source repository")
+            details = deploy_result["details"]
+            click.echo(format_success_message("deploy", details))
 
-            if dry_run:
-                click.echo(f"   [DRY RUN] Would deploy .claude folder to {target_path}")
-                # Save configuration file even for dry-run to show what would be created
-                config_result = save_config(source_repo, target_path)
-                if config_result["success"]:
-                    click.echo(
-                        f"   [DRY RUN] Configuration file created: {config_result['config_file'].name}"
-                    )
-                else:
-                    click.echo(
-                        f"   [DRY RUN] Configuration file creation would fail: {config_result['error']}"
-                    )
-                return
+            # Display operation details
+            for detail_line in format_operation_details("deploy", details):
+                click.echo(detail_line)
 
-            try:
-                # Copy .claude folder to target path
-                copy_result = copy_claude_folder(source_claude, target_path)
-
-                if copy_result["success"]:
-                    click.echo(f"Successfully deployed .claude folder to {target_path}")
-                    click.echo(f"   Files copied: {copy_result['files_copied']}")
-                    click.echo(f"   Bytes copied: {copy_result['bytes_copied']}")
-
-                    if copy_result["backup_created"]:
-                        click.echo(
-                            f"   Backup created: {copy_result['backup_path'].name}"
-                        )
-
-                    # Save configuration file after successful deployment
-                    config_result = save_config(source_repo, target_path)
-                    if config_result["success"]:
-                        click.echo(
-                            f"Configuration saved: {config_result['config_file'].name}"
-                        )
-                    else:
-                        click.echo(
-                            f"Warning: Could not save configuration: {config_result['error']}"
-                        )
-                else:
-                    click.echo(
-                        f"ERROR: Failed to deploy to {target_path}: {copy_result['error']}"
-                    )
-
-            except Exception as e:
-                click.echo(f"ERROR: Unexpected error: {e}")
+            # Display configuration message
+            config_msg = format_config_message(details, "deploy")
+            if config_msg:
+                click.echo(config_msg)
+        else:
+            click.echo(format_error_message(deploy_result["message"]))
+            return
 
         click.echo("\nDeploy operation completed!")
 
     except GitHubCLIError as e:
-        click.echo(f"ERROR: GitHub CLI error: {e}")
+        click.echo(format_error_message(f"GitHub CLI error: {e}"))
         click.echo("Try running: gh auth login")
     except Exception as e:
-        click.echo(f"ERROR: Unexpected error: {e}")
+        click.echo(format_error_message(f"Unexpected error: {e}"))
 
 
 @main.command()
@@ -181,14 +149,12 @@ def update(path, dry_run, source, no_backup):
         if dry_run:
             click.echo("Dry run mode - no changes would be made")
 
-        # Ensure target path exists
-        if not target_path.exists():
-            click.echo(f"ERROR: Target path does not exist: {target_path}")
+        # Validate target path
+        path_validation = validate_target_path(path)
+        if not path_validation["success"]:
+            click.echo(format_error_message(path_validation["message"]))
             return
-
-        if not target_path.is_dir():
-            click.echo(f"ERROR: Target path is not a directory: {target_path}")
-            return
+        target_path = path_validation["resolved_path"]
 
         # Handle source repository selection
         if not source:
@@ -210,11 +176,9 @@ def update(path, dry_run, source, no_backup):
         click.echo(f"\nUpdating target path: {target_path}")
 
         # Handle backup before update (if .claude folder exists)
-        backup_needed = False
         try:
-            target_claude = detect_claude_folder(target_path)
+            detect_claude_folder(target_path)
             click.echo("Found existing .claude folder in target")
-            backup_needed = True
 
             # Create backup manager and handle backup
             backup_manager = BackupManager(target_path)
@@ -232,7 +196,7 @@ def update(path, dry_run, source, no_backup):
                     return
             elif should_backup and dry_run:
                 click.echo("   [DRY RUN] Would create backup before update")
-            elif not no_backup:
+            elif not no_backup and not dry_run:
                 click.echo("Skipping backup as requested.")
 
         except ClaudeFolderNotFoundError:
@@ -240,113 +204,63 @@ def update(path, dry_run, source, no_backup):
             pass
 
         if dry_run:
-            click.echo(f"   [DRY RUN] Would update .claude folder in {target_path}")
+            click.echo(format_dry_run_message("update", str(target_path)))
             return
 
         # Validate GitHub setup
         click.echo("Checking GitHub CLI setup...")
-        setup_info = ensure_github_setup()
-        click.echo(
-            f"GitHub CLI v{setup_info['cli_version']} authenticated as {setup_info['user_info'].get('login', 'unknown')}"
-        )
+        github_validation = validate_github_setup()
+        if not github_validation["success"]:
+            click.echo(format_error_message(github_validation["message"]))
+            click.echo("Try running: gh auth login")
+            return
+        click.echo(format_github_setup_message(github_validation["setup_info"]))
 
         # Validate source repository
         click.echo(f"Validating source repository: {source}")
-        source_info = validate_repository_access(source)
-        click.echo(f"Source repository validated: {source_info['full_name']}")
+        repo_validation = validate_source_repository(source)
+        if not repo_validation["success"]:
+            click.echo(format_error_message(repo_validation["message"]))
+            return
+        click.echo(format_repository_validation_message(repo_validation["repo_info"]))
 
-        # Clone source repository to temporary directory
-        with tempfile.TemporaryDirectory() as temp_dir:
-            click.echo("Cloning source repository...")
-            clone_result = clone_repository(source, Path(temp_dir))
-            source_repo_path = clone_result["repository_path"]
+        # Perform update operation
+        click.echo("Cloning source repository...")
 
-            # Detect .claude folder in source
-            try:
-                source_claude = detect_claude_folder(source_repo_path)
+        # Execute update business logic
+        update_result = update_claude_commands(target_path, source, dry_run, no_backup)
+
+        if update_result["success"]:
+            if not dry_run:
                 click.echo("Found .claude folder in source repository")
-            except ClaudeFolderNotFoundError:
-                click.echo(
-                    f"ERROR: No .claude folder found in source repository: {source}"
-                )
-                return
-            except ClaudeFolderCorruptedError as e:
-                click.echo(f"ERROR: Corrupted .claude folder in source: {e}")
-                return
+                details = update_result["details"]
 
-            try:
-                # Check if target has .claude folder
-                try:
-                    target_claude = detect_claude_folder(target_path)
-                    # Already announced in backup section
-
-                    # Merge/update .claude folders
-                    merge_result = merge_claude_folders(source_claude, target_claude)
-
-                    if merge_result["success"]:
-                        click.echo(
-                            f"Successfully updated .claude folder in {target_path}"
-                        )
-                        click.echo(f"   Files updated: {merge_result['files_updated']}")
-                        click.echo(f"   Files added: {merge_result['files_added']}")
-                        click.echo(
-                            f"   Files preserved: {merge_result['files_preserved']}"
-                        )
-
-                        # Save configuration file after successful update
-                        config_result = save_config(source, target_path)
-                        if config_result["success"]:
-                            click.echo(
-                                f"Configuration updated: {config_result['config_file'].name}"
-                            )
-                        else:
-                            click.echo(
-                                f"Warning: Could not update configuration: {config_result['error']}"
-                            )
-                    else:
-                        click.echo(
-                            f"ERROR: Failed to update {target_path}: {merge_result['error']}"
-                        )
-
-                except ClaudeFolderNotFoundError:
+                if details.get("fresh_deploy"):
                     click.echo(
                         f"No existing .claude folder in {target_path}, deploying fresh copy..."
                     )
-                    # If no existing .claude folder, do a fresh deploy
-                    copy_result = copy_claude_folder(source_claude, target_path)
 
-                    if copy_result["success"]:
-                        click.echo(
-                            f"Successfully deployed .claude folder to {target_path}"
-                        )
-                        click.echo(f"   Files copied: {copy_result['files_copied']}")
-                        click.echo(f"   Bytes copied: {copy_result['bytes_copied']}")
+                click.echo(format_success_message("update", details))
 
-                        # Save configuration file after successful deployment
-                        config_result = save_config(source, target_path)
-                        if config_result["success"]:
-                            click.echo(
-                                f"Configuration saved: {config_result['config_file'].name}"
-                            )
-                        else:
-                            click.echo(
-                                f"Warning: Could not save configuration: {config_result['error']}"
-                            )
-                    else:
-                        click.echo(
-                            f"ERROR: Failed to deploy to {target_path}: {copy_result['error']}"
-                        )
+                # Display operation details
+                for detail_line in format_operation_details("update", details):
+                    click.echo(detail_line)
 
-            except Exception as e:
-                click.echo(f"ERROR: Unexpected error: {e}")
+                # Display configuration message
+                config_msg = format_config_message(details, "update")
+                if config_msg:
+                    click.echo(config_msg)
+        else:
+            click.echo(format_error_message(update_result["message"]))
+            return
 
         click.echo("\nUpdate operation completed!")
 
     except GitHubCLIError as e:
-        click.echo(f"ERROR: GitHub CLI error: {e}")
+        click.echo(format_error_message(f"GitHub CLI error: {e}"))
         click.echo("Try running: gh auth login")
     except Exception as e:
-        click.echo(f"ERROR: Unexpected error: {e}")
+        click.echo(format_error_message(f"Unexpected error: {e}"))
 
 
 if __name__ == "__main__":
