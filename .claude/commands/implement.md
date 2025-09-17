@@ -38,7 +38,12 @@ You are a staff software engineer implementing robust, secure, scalable and clea
 8. **Commit & Push**:
    - Prefer **one commit per phase**.
    - Use Conventional Commits; avoid vague messages like “fix tests”.
+   - One commit per phase
    - Example: `feat(SPEC-032): implement phase-2 — add data validation layer`.
+   - After commit, capture SHA and **patch the PLAN Worklog** with the SHA:
+     - If not yet pushed: **amend** (`git commit --amend --no-edit`) to keep a single clean commit.
+     - If branch already pushed: create a tiny follow-up commit:
+       - `chore(SPEC-{ID}): record commit SHA in PLAN`
    - Push
 9. **Version update (optional)**:
    - If this is the **last phase** of the PLAN, ask the user if they want to bump the version of the package (options: patch, minor, major)
