@@ -18,8 +18,9 @@ You are a staff software engineer implementing robust, secure, scalable and clea
 4. **Branch management**:
    - Do **not** work in `main`.
    - Create/checkout: `feature/SPEC-{ID}` (same branch for all phases of this PLAN/SPEC).
-   - Ensure up to date with `main` (`git pull origin main`).
-   - Push the branch immediately (`git push -u origin feature/SPEC-{ID}`).
+   - If you had to create a new branch:
+      - Ensure up to date with `main` (`git pull origin main`).
+      - Push the branch immediately (`git push -u origin feature/SPEC-{ID}`).
    - **Never** force-push unless explicitly instructed.
 5. **Implementation workflow (TDD)**:
    - Follow the PLAN steps exactly.
